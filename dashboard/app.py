@@ -531,38 +531,13 @@ with st.sidebar:
 
     st.markdown('<div class="section-hdr">Mission Control</div>', unsafe_allow_html=True)
     
-    scan_mode = st.radio("Scan Target", ["Upload Files", "Local Directory"], horizontal=True, label_visibility="collapsed")
-    
-    uploaded_files = None
-    local_dir_path = ""
-    if scan_mode == "Upload Files":
-        uploaded_files = st.file_uploader("Select files to scan", accept_multiple_files=True)
-    else:
-        c1, c2 = st.columns([3, 1])
-        local_dir_path = c1.text_input("Folder Path", value=st.session_state.get('browse_path', ''), placeholder="C:/my-project/src", label_visibility="collapsed")
-        if c2.button("Browse"):
-            try:
-                import tkinter as tk
-                from tkinter import filedialog
-                root = tk.Tk()
-                root.withdraw()
-                root.attributes('-topmost', True)
-                folder = filedialog.askdirectory(master=root)
-                root.destroy()
-                if folder:
-                    st.session_state.browse_path = folder
-                    st.rerun()
-            except Exception:
-                st.error("Browser unsupported.")
+    uploaded_files = st.file_uploader("Upload Files or Drop a Folder", accept_multiple_files=True)
 
     st.markdown("<div class='primary-btn'>", unsafe_allow_html=True)
     if st.button("Run Full Workflow", disabled=st.session_state.workflow_running or not api_ok):
-        target_path = "."
-        if scan_mode == "Upload Files" and uploaded_files:
+        if uploaded_files:
             api_upload_files("/workflow/upload", uploaded_files)
-            target_path = "workspace/scan_target"
-        elif scan_mode == "Local Directory" and local_dir_path:
-            target_path = local_dir_path
+        res = api_post("/workflow/run", {"target_path": "workspace/scan_target" if uploaded_files else ".", "num_nfs": 24})
             
         res = api_post("/workflow/run", {"target_path": target_path, "num_nfs": 24})
         if res:
