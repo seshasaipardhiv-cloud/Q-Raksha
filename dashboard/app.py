@@ -555,8 +555,6 @@ with st.sidebar:
         if uploaded_files:
             api_upload_files("/workflow/upload", uploaded_files)
         res = api_post("/workflow/run", {"target_path": "workspace/scan_target" if uploaded_files else ".", "num_nfs": 24})
-            
-        res = api_post("/workflow/run", {"target_path": target_path, "num_nfs": 24})
         if res:
             st.session_state.workflow_running = True
             st.rerun()
