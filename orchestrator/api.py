@@ -613,7 +613,7 @@ async def run_full_workflow(req: WorkflowRunRequest, background_tasks: Backgroun
             # If target_path is scan_target, we generate safe versions
             safe_dir = os.path.join(base_dir, "workspace", "safe_versions")
             os.makedirs(safe_dir, exist_ok=True)
-            if "scan_target" in target_path:
+            if True:
                 for root, dirs, files in os.walk(target_path):
                     for file in files:
                         filepath = os.path.join(root, file)

@@ -522,13 +522,25 @@ with st.sidebar:
 
     st.markdown('<div class="section-hdr">Mission Control</div>', unsafe_allow_html=True)
     
-    uploaded_files = st.file_uploader("Select files to scan", accept_multiple_files=True)
+    scan_mode = st.radio("Scan Target", ["Upload Files", "Local Directory"], horizontal=True, label_visibility="collapsed")
+    
+    uploaded_files = None
+    local_dir_path = ""
+    if scan_mode == "Upload Files":
+        uploaded_files = st.file_uploader("Select files to scan", accept_multiple_files=True)
+    else:
+        local_dir_path = st.text_input("Enter absolute folder path", placeholder="C:/my-project/src")
 
     st.markdown("<div class='primary-btn'>", unsafe_allow_html=True)
     if st.button("Run Full Workflow", disabled=st.session_state.workflow_running or not api_ok):
-        if uploaded_files:
+        target_path = "."
+        if scan_mode == "Upload Files" and uploaded_files:
             api_upload_files("/workflow/upload", uploaded_files)
-        res = api_post("/workflow/run", {"target_path": "workspace/scan_target" if uploaded_files else ".", "num_nfs": 24})
+            target_path = "workspace/scan_target"
+        elif scan_mode == "Local Directory" and local_dir_path:
+            target_path = local_dir_path
+            
+        res = api_post("/workflow/run", {"target_path": target_path, "num_nfs": 24})
         if res:
             st.session_state.workflow_running = True
             st.rerun()
