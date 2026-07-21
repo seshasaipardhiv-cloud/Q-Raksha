@@ -11,6 +11,7 @@ ROOT = Path(__file__).parent.parent
 sys.path.insert(0, str(ROOT))
 
 import streamlit as st
+import streamlit.components.v1 as components
 import plotly.graph_objects as go
 import plotly.express as px
 import pandas as pd
@@ -292,6 +293,7 @@ def api_upload_files(ep, uploaded_files):
         return r.json() if r.status_code == 200 else None
     except Exception as e:
         import streamlit as st
+import streamlit.components.v1 as components
         st.error(f"Upload failed: {e}")
         return None
 
@@ -531,7 +533,23 @@ with st.sidebar:
 
     st.markdown('<div class="section-hdr">Mission Control</div>', unsafe_allow_html=True)
     
-    uploaded_files = st.file_uploader("Upload Files or Drop a Folder", accept_multiple_files=True)
+    uploaded_files = st.file_uploader("Select a Folder to Scan", accept_multiple_files=True, key="folder_uploader")
+    
+    # Inject JS to transform the file uploader into a native folder picker
+    components.html(
+        '''
+        <script>
+        const inputs = window.parent.document.querySelectorAll('input[type="file"]');
+        inputs.forEach(input => {
+            input.setAttribute('webkitdirectory', 'true');
+            input.setAttribute('directory', 'true');
+        });
+        </script>
+        ''',
+        height=0,
+        width=0,
+    )
+
 
     st.markdown("<div class='primary-btn'>", unsafe_allow_html=True)
     if st.button("Run Full Workflow", disabled=st.session_state.workflow_running or not api_ok):
