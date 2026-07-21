@@ -252,7 +252,29 @@ footer { visibility: hidden; }
 /* ---- Plotly ---- */
 .js-plotly-plot .plotly { background: transparent !important; }
 h1,h2,h3 { color: rgba(255,255,255,0.95) !important; font-family:'Inter',sans-serif !important; }
+
+/* Style the entire right column to be the glass card */
+[data-testid="column"]:nth-of-type(2) {
+  background: rgba(255,255,255,0.055);
+  backdrop-filter: blur(32px) saturate(200%);
+  -webkit-backdrop-filter: blur(32px) saturate(200%);
+  border: 1px solid rgba(255,255,255,0.13);
+  border-radius: 24px;
+  padding: 36px 32px;
+  box-shadow: 0 32px 80px rgba(0,0,0,0.6), inset 0 1px 0 rgba(255,255,255,0.1);
+  margin-top: 30px;
+  position: relative;
+}
+/* Glowing top line */
+[data-testid="column"]:nth-of-type(2)::before {
+  content: ''; position: absolute;
+  top: 0; left: 0; right: 0; height: 1px;
+  background: linear-gradient(90deg, transparent, rgba(13,148,136,0.9), rgba(251,191,36,0.7), transparent);
+}
+/* Streamlit OAuth Buttons custom colors */
+[data-testid="column"]:nth-of-type(2) .stButton > button { margin-bottom: 4px; }
 </style>
+
 """
 
 st.markdown(GLOBAL_CSS, unsafe_allow_html=True)
@@ -420,75 +442,44 @@ if not st.session_state.authenticated:
 </div>
 """, unsafe_allow_html=True)
 
-    # ----- Right: login card -----
     with right_col:
-        st.markdown("""
-<div style="min-height:95vh;display:flex;align-items:center;justify-content:center;padding:30px 20px;">
-<div style="width:100%;max-width:400px;
-     background:rgba(255,255,255,0.055);
-     backdrop-filter:blur(32px) saturate(200%);
-     -webkit-backdrop-filter:blur(32px) saturate(200%);
-     border:1px solid rgba(255,255,255,0.13);
-     border-radius:24px;
-     padding:36px 32px;
-     box-shadow:0 32px 80px rgba(0,0,0,0.6),inset 0 1px 0 rgba(255,255,255,0.1);
-     position:relative;overflow:hidden;">
-  <div style="position:absolute;top:0;left:0;right:0;height:1px;
-       background:linear-gradient(90deg,transparent,rgba(13,148,136,0.9),rgba(251,191,36,0.7),transparent);"></div>
-  <div style="text-align:center;margin-bottom:24px;">
-    <div style="font-size:2rem;margin-bottom:6px;">&#128274;</div>
-    <div style="font-size:1.3rem;font-weight:800;color:rgba(255,255,255,0.95);">Secure Access Portal</div>
-    <div style="font-size:0.76rem;color:rgba(255,255,255,0.38);margin-top:4px;">
-      Authenticated access to Q-RAKSHA SENTINEL
-    </div>
-  </div>
-  <!-- OAuth buttons (display only) -->
-  <div style="display:flex;flex-direction:column;gap:9px;margin-bottom:6px;">
-    <button style="display:flex;align-items:center;justify-content:center;gap:10px;
-         padding:12px;border-radius:12px;width:100%;font-size:0.84rem;font-weight:600;
-         cursor:pointer;border:1px solid rgba(234,67,53,0.38);color:rgba(255,255,255,0.88);
-         font-family:Inter,sans-serif;background:rgba(234,67,53,0.1);backdrop-filter:blur(10px);">
-      <svg width="17" height="17" viewBox="0 0 48 48">
-        <path fill="#FFC107" d="M43.6 20.1H42V20H24v8h11.3C33.7 32.7 29.3 36 24 36c-6.6 0-12-5.4-12-12s5.4-12 12-12c3.1 0 5.8 1.1 7.9 2.9l5.7-5.7C34.5 6.5 29.6 4 24 4 12.95 4 4 12.95 4 24s8.95 20 20 20 20-8.95 20-20c0-1.3-.1-2.7-.4-3.9z"/>
-        <path fill="#FF3D00" d="m6.3 14.7 6.6 4.8C14.7 15.1 19 12 24 12c3.1 0 5.8 1.1 7.9 2.9l5.7-5.7C34.5 6.5 29.6 4 24 4 16.3 4 9.7 8.4 6.3 14.7z"/>
-        <path fill="#4CAF50" d="M24 44c5.2 0 9.9-2 13.4-5.1l-6.2-5.2C29.3 35.3 26.8 36 24 36c-5.3 0-9.7-3.3-11.3-8H6.2C9.5 39.6 16.2 44 24 44z"/>
-        <path fill="#1976D2" d="M43.6 20.1H42V20H24v8h11.3c-.8 2.3-2.3 4.3-4.3 5.7l6.2 5.2C36.9 39.8 44 34.1 44 24c0-1.3-.1-2.7-.4-3.9z"/>
-      </svg>
-      Continue with Google
-    </button>
-    <button style="display:flex;align-items:center;justify-content:center;gap:10px;
-         padding:12px;border-radius:12px;width:100%;font-size:0.84rem;font-weight:600;
-         cursor:pointer;border:1px solid rgba(255,255,255,0.18);color:rgba(255,255,255,0.88);
-         font-family:Inter,sans-serif;background:rgba(36,41,46,0.5);backdrop-filter:blur(10px);">
-      <svg width="17" height="17" viewBox="0 0 24 24" fill="white">
-        <path d="M12 2C6.477 2 2 6.477 2 12c0 4.42 2.87 8.17 6.84 9.5.5.08.66-.23.66-.5v-1.69c-2.77.6-3.36-1.34-3.36-1.34-.46-1.16-1.11-1.47-1.11-1.47-.91-.62.07-.6.07-.6 1 .07 1.53 1.03 1.53 1.03.87 1.52 2.34 1.07 2.91.83.09-.65.35-1.09.63-1.34-2.22-.25-4.55-1.11-4.55-4.92 0-1.11.38-2 1.03-2.71-.1-.25-.45-1.29.1-2.64 0 0 .84-.27 2.75 1.02.79-.22 1.65-.33 2.5-.33.85 0 1.71.11 2.5.33 1.91-1.29 2.75-1.02 2.75-1.02.55 1.35.2 2.39.1 2.64.65.71 1.03 1.6 1.03 2.71 0 3.82-2.34 4.66-4.57 4.91.36.31.69.92.69 1.85V21c0 .27.16.59.67.5C19.14 20.16 22 16.42 22 12A10 10 0 0 0 12 2z"/>
-      </svg>
-      Continue with GitHub
-    </button>
-    <button style="display:flex;align-items:center;justify-content:center;gap:10px;
-         padding:12px;border-radius:12px;width:100%;font-size:0.84rem;font-weight:600;
-         cursor:pointer;border:1px solid rgba(0,120,212,0.38);color:rgba(255,255,255,0.88);
-         font-family:Inter,sans-serif;background:rgba(0,120,212,0.12);backdrop-filter:blur(10px);">
-      <svg width="17" height="17" viewBox="0 0 21 21">
-        <rect x="1"  y="1"  width="9" height="9" fill="#f25022"/>
-        <rect x="11" y="1"  width="9" height="9" fill="#7fba00"/>
-        <rect x="1"  y="11" width="9" height="9" fill="#00a4ef"/>
-        <rect x="11" y="11" width="9" height="9" fill="#ffb900"/>
-      </svg>
-      Continue with Microsoft
-    </button>
-  </div>
-  <div style="display:flex;align-items:center;gap:10px;margin:16px 0;
-       color:rgba(255,255,255,0.25);font-size:0.72rem;">
-    <div style="flex:1;height:1px;background:rgba(255,255,255,0.08);"></div>
-    or sign in with credentials
-    <div style="flex:1;height:1px;background:rgba(255,255,255,0.08);"></div>
+        st.markdown('''
+<div style="text-align:center;margin-bottom:24px;">
+  <div style="font-size:2rem;margin-bottom:6px;">&#128274;</div>
+  <div style="font-size:1.3rem;font-weight:800;color:rgba(255,255,255,0.95);">Secure Access Portal</div>
+  <div style="font-size:0.76rem;color:rgba(255,255,255,0.38);margin-top:4px;">
+    Authenticated access to Q-RAKSHA SENTINEL
   </div>
 </div>
-</div>
-""", unsafe_allow_html=True)
+''', unsafe_allow_html=True)
 
-        # Streamlit form (rendered inside the column, visually overlaps the card)
+        if st.button("🔴 Continue with Google", use_container_width=True):
+            st.session_state.authenticated = True
+            st.session_state.user_name = "Google User"
+            st.session_state.user_role = "Network Security Analyst"
+            st.rerun()
+
+        if st.button("⚫ Continue with GitHub", use_container_width=True):
+            st.session_state.authenticated = True
+            st.session_state.user_name = "GitHub User"
+            st.session_state.user_role = "Telecom Engineer"
+            st.rerun()
+
+        if st.button("🔵 Continue with Microsoft", use_container_width=True):
+            st.session_state.authenticated = True
+            st.session_state.user_name = "Microsoft User"
+            st.session_state.user_role = "CISO / Executive"
+            st.rerun()
+
+        st.markdown('''
+<div style="display:flex;align-items:center;gap:10px;margin:20px 0 10px;
+     color:rgba(255,255,255,0.25);font-size:0.72rem;">
+  <div style="flex:1;height:1px;background:rgba(255,255,255,0.08);"></div>
+  or sign in with credentials
+  <div style="flex:1;height:1px;background:rgba(255,255,255,0.08);"></div>
+</div>
+''', unsafe_allow_html=True)
+
         with st.form("signin_form", clear_on_submit=False):
             email    = st.text_input("Email", placeholder="sentinel@nciipc.gov.in")
             password = st.text_input("Password", type="password", placeholder="Enter password")
@@ -510,20 +501,13 @@ if not st.session_state.authenticated:
                 else:
                     st.error("Please enter your email and password.")
 
-        st.markdown("<div style='height:8px'></div>", unsafe_allow_html=True)
-        if st.button("Quick Demo Access (No Auth Required)", use_container_width=True):
-            st.session_state.authenticated = True
-            st.session_state.user_name = "Demo Analyst"
-            st.session_state.user_role = "Network Security Analyst"
-            st.rerun()
-
-        st.markdown("""
+        st.markdown('''
 <p style='text-align:center;font-size:0.67rem;color:rgba(255,255,255,0.18);
    margin-top:16px;line-height:1.7;'>
   Protected by Q-RAKSHA Zero-Trust Architecture<br>
   All sessions are cryptographically audited.
 </p>
-""", unsafe_allow_html=True)
+''', unsafe_allow_html=True)
 
     st.stop()
 
