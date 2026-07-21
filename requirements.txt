@@ -5,13 +5,10 @@ streamlit==1.35.0
 
 # ─── Cryptography ────────────────────────────────────────────────────────────
 cryptography==42.0.8
-# liboqs-python — install separately if C library available:
-# pip install liboqs-python
-# Fallback pure-Python PQC reference included in pqc/reference/
 
 # ─── Simulation & Math ───────────────────────────────────────────────────────
 numpy==1.26.4
-scipy==1.13.1
+# scipy removed — not used in Q-RAKSHA modules, causes build failures on Render
 
 # ─── AI / ML ─────────────────────────────────────────────────────────────────
 scikit-learn==1.5.0
@@ -19,7 +16,6 @@ joblib==1.4.2
 
 # ─── Knowledge Graph (Step 2 & 3) ────────────────────────────────────────────
 networkx==3.3
-# pyvis==0.3.2  # Optional: interactive graph HTML output
 
 # ─── Dashboard / Visualization ───────────────────────────────────────────────
 plotly==5.22.0
@@ -31,11 +27,11 @@ pydantic==2.7.4
 python-multipart==0.0.9
 httpx==0.27.0
 aiofiles==23.2.1
+requests==2.32.3
 
 # ─── Reporting (Step 9 — Executive Report) ───────────────────────────────────
 reportlab==4.2.2
 jinja2==3.1.4
-# weasyprint==62.3  # Optional: HTML→PDF (requires system libpango)
 
 # ─── Dev / Test ───────────────────────────────────────────────────────────────
 pytest==8.2.2
