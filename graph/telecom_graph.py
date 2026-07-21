@@ -9,6 +9,7 @@ from __future__ import annotations
 
 import hashlib
 import json
+import os
 import random
 import time
 from dataclasses import asdict, dataclass, field
@@ -108,6 +109,99 @@ class TelecomKnowledgeGraph:
         self._built = False
 
     # ─── Public API ───────────────────────────────────────────────────────────
+
+
+    def build_from_cbom(self, cbom_dict: dict) -> TelecomGraph:
+        """Build the Knowledge Graph dynamically from actual CBOM scanner physical file findings."""
+        self._nf_nodes.clear()
+        self._cert_nodes.clear()
+        self._edges.clear()
+
+        findings = cbom_dict.get('findings', [])
+        if not findings:
+            # Fallback if there are no findings (100% compliant codebase)
+            # Create a single safe node representing the app
+            node = NFNode(
+                node_id="Scanned-App",
+                nf_type="Service",
+                vendor="Custom",
+                version="1.0",
+                slice_id="App",
+                trust_domain="Core-Domain",
+                cert_algorithm="ML-KEM-768",
+                cert_expiry_days=365,
+                api_count=5,
+                subscriber_count=1000,
+                pqc_ready=True
+            )
+            self._nf_nodes[node.node_id] = node
+        else:
+            # Group findings by file
+            file_findings = {}
+            for f in findings:
+                fname = os.path.basename(f.get('file', 'unknown_file'))
+                if fname not in file_findings:
+                    file_findings[fname] = []
+                file_findings[fname].append(f)
+
+            for idx, (fname, flist) in enumerate(file_findings.items()):
+                # Determine risk and algorithm
+                # Sort by risk score descending
+                flist.sort(key=lambda x: x.get('risk_score', 0), reverse=True)
+                highest_finding = flist[0]
+                
+                algo = highest_finding.get('algorithm', 'Unknown')
+                is_pqc = highest_finding.get('risk_level') == 'LOW'
+
+                node = NFNode(
+                    node_id=fname,
+                    nf_type="Service-Module",
+                    vendor="Custom",
+                    version="1.0",
+                    slice_id=SLICES[idx % len(SLICES)],
+                    trust_domain=TRUST_DOMAINS[idx % len(TRUST_DOMAINS)],
+                    cert_algorithm=algo,
+                    cert_expiry_days=random.randint(10, 365),
+                    api_count=random.randint(1, 20),
+                    subscriber_count=random.randint(100, 10000),
+                    pqc_ready=is_pqc
+                )
+                self._nf_nodes[node.node_id] = node
+
+        # Spawn cert nodes
+        self._spawn_cert_nodes()
+
+        # Connect the files into a topology (connect each to the next)
+        nf_list = list(self._nf_nodes.values())
+        n = len(nf_list)
+        if n > 1:
+            for i in range(n):
+                src = nf_list[i].node_id
+                dst = nf_list[(i + 1) % n].node_id
+                weight = random.uniform(0.1, 1.0)
+                self._edges.append(GraphEdge(source=src, target=dst, edge_type="DEPENDS", weight=weight))
+        elif n == 1:
+            # Self edge just so centrality doesn't crash on an empty edge list if needed
+            self._edges.append(GraphEdge(source=nf_list[0].node_id, target=nf_list[0].node_id, edge_type="DEPENDS", weight=1.0))
+
+        if NX_AVAILABLE:
+            self._build_nx_graph()
+
+        self._built = True
+
+        graph_id = "KG-" + hashlib.sha256(str(time.time()).encode()).hexdigest()[:8].upper()
+        timestamp = time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime())
+
+        return TelecomGraph(
+            graph_id=graph_id,
+            timestamp=timestamp,
+            node_count=len(self._nf_nodes) + len(self._cert_nodes),
+            edge_count=len(self._edges) + len(self._cert_nodes),
+            summary=f"Dynamically generated from {len(self._nf_nodes)} physical files.",
+            nf_nodes=list(self._nf_nodes.values()),
+            cert_nodes=list(self._cert_nodes.values()),
+            edges=self._edges
+        )
 
     def build(self, num_nfs: int = 24, seed: int | None = None) -> TelecomGraph:
         """Build the full Telecom Knowledge Graph from scratch."""

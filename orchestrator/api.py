@@ -528,12 +528,18 @@ async def run_full_workflow(req: WorkflowRunRequest, background_tasks: Backgroun
             # Step 1 — CBOM
             scanner = CBOMScanner(data_sensitivity=req.data_sensitivity, years_data_must_stay_secret=10)
             report = scanner.scan_path(target_path)
-            _pipeline["cbom"] = json.loads(scanner.to_json(report))
+            cbom_dict = json.loads(scanner.to_json(report))
+            _pipeline["cbom"] = cbom_dict
             _pipeline["step"] = 1
             await asyncio.sleep(0.5)
 
             # Step 2 — Graph
-            graph = kg_builder.build(num_nfs=req.num_nfs)
+            # Dynamically build graph from actual CBOM findings if target is scan_target, else fallback to demo
+            if "scan_target" in target_path or (cbom_dict.get('statistics', {}).get('files_scanned', 0) > 0):
+                graph = kg_builder.build_from_cbom(cbom_dict)
+            else:
+                graph = kg_builder.build(num_nfs=req.num_nfs)
+                
             _pipeline["graph"] = {"graph_id": graph.graph_id, "node_count": graph.node_count,
                                    "edge_count": graph.edge_count, "summary": graph.summary,
                                    "nf_nodes": [asdict(n) for n in graph.nf_nodes]}
