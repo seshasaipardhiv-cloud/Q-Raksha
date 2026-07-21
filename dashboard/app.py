@@ -105,17 +105,26 @@ footer { visibility: hidden; }
 
 /* ---- Metric card ---- */
 .m-card {
-  background: rgba(255,255,255,0.055);
-  backdrop-filter: var(--blur);
-  -webkit-backdrop-filter: var(--blur);
-  border: 1px solid rgba(255,255,255,0.13);
-  border-radius: 16px;
-  padding: 20px 16px;
-  text-align: center;
-  transition: all .3s;
-  box-shadow: 0 4px 24px rgba(0,0,0,0.3), inset 0 1px 0 rgba(255,255,255,0.1);
+  background: rgba(10, 0, 5, 0.45) !important;
+  backdrop-filter: blur(24px) saturate(180%) !important;
+  -webkit-backdrop-filter: blur(24px) saturate(180%) !important;
+  border: 1px solid rgba(255, 255, 255, 0.15) !important;
+  border-top: 1px solid rgba(255, 255, 255, 0.3) !important;
+  border-radius: 20px !important;
+  padding: 24px 16px !important;
+  text-align: center !important;
+  transition: all .3s cubic-bezier(0.4, 0, 0.2, 1) !important;
+  box-shadow: 0 12px 40px rgba(0,0,0,0.5), inset 0 1px 0 rgba(255,255,255,0.2) !important;
+  position: relative;
+  overflow: hidden;
 }
-.m-card:hover { transform: translateY(-4px) scale(1.02); border-color: rgba(255,255,255,0.25); }
+.m-card::before {
+  content: ''; position: absolute; top: 0; left: 0; right: 0; height: 100%;
+  background: linear-gradient(180deg, rgba(255,255,255,0.08) 0%, rgba(255,255,255,0) 100%);
+  pointer-events: none;
+}
+
+.m-card:hover { transform: translateY(-6px) scale(1.03) !important; border-color: rgba(255,255,255,0.4) !important; box-shadow: 0 20px 50px rgba(0,0,0,0.6) !important; }
 .m-val {
   font-size: 2rem; font-weight: 800;
   font-family: 'JetBrains Mono', monospace;
@@ -529,7 +538,22 @@ with st.sidebar:
     if scan_mode == "Upload Files":
         uploaded_files = st.file_uploader("Select files to scan", accept_multiple_files=True)
     else:
-        local_dir_path = st.text_input("Enter absolute folder path", placeholder="C:/my-project/src")
+        c1, c2 = st.columns([3, 1])
+        local_dir_path = c1.text_input("Folder Path", value=st.session_state.get('browse_path', ''), placeholder="C:/my-project/src", label_visibility="collapsed")
+        if c2.button("Browse"):
+            try:
+                import tkinter as tk
+                from tkinter import filedialog
+                root = tk.Tk()
+                root.withdraw()
+                root.attributes('-topmost', True)
+                folder = filedialog.askdirectory(master=root)
+                root.destroy()
+                if folder:
+                    st.session_state.browse_path = folder
+                    st.rerun()
+            except Exception:
+                st.error("Browser unsupported.")
 
     st.markdown("<div class='primary-btn'>", unsafe_allow_html=True)
     if st.button("Run Full Workflow", disabled=st.session_state.workflow_running or not api_ok):
