@@ -293,7 +293,6 @@ def api_upload_files(ep, uploaded_files):
         return r.json() if r.status_code == 200 else None
     except Exception as e:
         import streamlit as st
-import streamlit.components.v1 as components
         st.error(f"Upload failed: {e}")
         return None
 
