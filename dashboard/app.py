@@ -197,7 +197,8 @@ html, body, [class*="css"] {
 
 # ─── Initialization ─────────────────────────────────────────────────────────
 
-API_URL = "http://localhost:8765"
+API_URL = "https://q-raksha-api.onrender.com"
+
 
 if "workflow_step" not in st.session_state:
     st.session_state.workflow_step = 0
