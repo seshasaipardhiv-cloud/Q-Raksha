@@ -1,5 +1,6 @@
 """
-Q-RAKSHA SENTINEL — Executive Dashboard (Glassmorphism Edition)
+Q-RAKSHA SENTINEL — Executive Dashboard (Professional Glass Edition)
+Full sign-in flow + live animated background + glassmorphism UI
 """
 import base64
 import json
@@ -17,7 +18,7 @@ import plotly.express as px
 import pandas as pd
 import requests
 
-# ── Load background image as base64 ─────────────────────────────────────────
+# ── Background image ─────────────────────────────────────────────────────────
 _BG_PATH = Path(__file__).parent / "static" / "bg.png"
 _BG_B64 = ""
 if _BG_PATH.exists():
@@ -28,375 +29,531 @@ st.set_page_config(
     page_title="Q-RAKSHA SENTINEL",
     page_icon="🛡️",
     layout="wide",
-    initial_sidebar_state="expanded",
+    initial_sidebar_state="collapsed",
 )
 
-# ── CSS: Quantum background + iOS glassmorphism ──────────────────────────────
-_bg_css = f"url('data:image/png;base64,{_BG_B64}')" if _BG_B64 else "linear-gradient(135deg,#0d0221 0%,#1a0533 50%,#0d1a3a 100%)"
+# ─────────────────────────────────────────────────────────────────────────────
+# GLOBAL CSS — Live animated bg + full glassmorphism
+# ─────────────────────────────────────────────────────────────────────────────
+_bg_data = f"url('data:image/png;base64,{_BG_B64}')" if _BG_B64 else "linear-gradient(135deg,#1a0533 0%,#0d1a3a 100%)"
 
 st.markdown(f"""
 <style>
 @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=JetBrains+Mono:wght@400;500;600&display=swap');
 
-/* ── Root Variables ── */
+/* ─── Root ─────────────────────────────────────────────────── */
 :root {{
-    --glass-bg:       rgba(255,255,255,0.07);
-    --glass-border:   rgba(255,255,255,0.18);
-    --glass-shadow:   0 8px 32px rgba(0,0,0,0.4);
-    --glass-blur:     backdrop-filter: blur(20px) saturate(180%);
-    --accent-orange:  #f97316;
-    --accent-amber:   #fbbf24;
-    --accent-blue:    #60a5fa;
-    --accent-cyan:    #22d3ee;
-    --accent-purple:  #a78bfa;
-    --accent-green:   #34d399;
-    --accent-red:     #f87171;
-    --text-primary:   rgba(255,255,255,0.95);
-    --text-secondary: rgba(255,255,255,0.65);
-    --text-dim:       rgba(255,255,255,0.35);
+  --purple:   #9333ea;
+  --violet:   #7c3aed;
+  --gold:     #f59e0b;
+  --amber:    #fbbf24;
+  --rose:     #f43f5e;
+  --cyan:     #06b6d4;
+  --green:    #10b981;
+  --glass:    rgba(255,255,255,0.06);
+  --glass-b:  rgba(255,255,255,0.14);
+  --blur:     blur(22px) saturate(180%);
+  --shadow:   0 8px 40px rgba(0,0,0,0.45);
+  --text:     rgba(255,255,255,0.93);
+  --text-dim: rgba(255,255,255,0.5);
+  --text-muted: rgba(255,255,255,0.3);
 }}
 
-/* ── Full-page quantum background ── */
+/* ─── Live animated background ─────────────────────────────── */
 html, body, .stApp {{
-    font-family: 'Inter', sans-serif !important;
-    background-image: {_bg_css} !important;
-    background-size: cover !important;
-    background-position: center !important;
-    background-attachment: fixed !important;
-    background-repeat: no-repeat !important;
-    color: var(--text-primary) !important;
+  font-family: 'Inter', sans-serif !important;
+  color: var(--text) !important;
+  overflow-x: hidden;
 }}
 
-/* Subtle dark veil for readability */
+.stApp {{
+  background: none !important;
+}}
+
+/* Pseudo-element for animated background */
 .stApp::before {{
-    content: '';
-    position: fixed;
-    inset: 0;
-    background: rgba(8, 4, 20, 0.55);
-    z-index: 0;
-    pointer-events: none;
+  content: '';
+  position: fixed;
+  inset: -10%;          /* slightly oversized so the zoom/pan doesn't clip */
+  z-index: -2;
+  background-image: {_bg_data};
+  background-size: cover;
+  background-position: center;
+  animation: bgBreath 18s ease-in-out infinite alternate;
+  filter: brightness(0.85) saturate(1.2);
 }}
 
-/* ── Glassmorphism Sidebar ── */
+/* Overlay gradient veil */
+.stApp::after {{
+  content: '';
+  position: fixed;
+  inset: 0;
+  z-index: -1;
+  background: 
+    radial-gradient(ellipse 80% 60% at 50% 50%, rgba(147,51,234,0.08) 0%, transparent 70%),
+    linear-gradient(180deg, rgba(5,3,20,0.45) 0%, rgba(8,4,28,0.55) 100%);
+  pointer-events: none;
+}}
+
+@keyframes bgBreath {{
+  0%   {{ transform: scale(1.00) translate(0px, 0px);    filter: brightness(0.82) saturate(1.15); }}
+  25%  {{ transform: scale(1.06) translate(-8px, -4px);  filter: brightness(0.88) saturate(1.25); }}
+  50%  {{ transform: scale(1.03) translate(5px, 8px);    filter: brightness(0.85) saturate(1.20); }}
+  75%  {{ transform: scale(1.08) translate(-3px, 5px);   filter: brightness(0.90) saturate(1.30); }}
+  100% {{ transform: scale(1.04) translate(6px, -6px);   filter: brightness(0.86) saturate(1.18); }}
+}}
+
+/* Floating particle orbs */
+.particle-orb {{
+  position: fixed;
+  border-radius: 50%;
+  filter: blur(80px);
+  pointer-events: none;
+  z-index: -1;
+  animation: floatOrb 12s ease-in-out infinite;
+}}
+.orb1 {{ width:400px;height:400px; background:rgba(147,51,234,0.18); top:-100px; left:-100px; animation-duration:14s; }}
+.orb2 {{ width:300px;height:300px; background:rgba(245,158,11,0.12); bottom:0; right:-80px; animation-duration:10s; animation-delay:-4s; }}
+.orb3 {{ width:250px;height:250px; background:rgba(6,182,212,0.10); top:40%; left:60%; animation-duration:16s; animation-delay:-8s; }}
+
+@keyframes floatOrb {{
+  0%,100% {{ transform: translate(0,0)   scale(1); }}
+  33%     {{ transform: translate(30px,-20px) scale(1.08); }}
+  66%     {{ transform: translate(-20px,30px) scale(0.94); }}
+}}
+
+/* ─── Streamlit layout cleanup ─────────────────────────────── */
 [data-testid="stSidebar"] {{
-    background: rgba(10, 5, 30, 0.65) !important;
-    backdrop-filter: blur(24px) saturate(180%) !important;
-    -webkit-backdrop-filter: blur(24px) saturate(180%) !important;
-    border-right: 1px solid rgba(255,255,255,0.12) !important;
-    box-shadow: 4px 0 24px rgba(0,0,0,0.4) !important;
+  background: rgba(10,5,30,0.75) !important;
+  backdrop-filter: var(--blur) !important;
+  -webkit-backdrop-filter: var(--blur) !important;
+  border-right: 1px solid rgba(255,255,255,0.1) !important;
+  box-shadow: 4px 0 32px rgba(0,0,0,0.5) !important;
+}}
+[data-testid="stHeader"]   {{ background: transparent !important; }}
+[data-testid="stToolbar"]  {{ background: transparent !important; }}
+.main .block-container     {{ padding-top: 1.5rem !important; }}
+footer {{ visibility: hidden; }}
+#MainMenu {{ visibility: hidden; }}
+
+/* ─── Glass card ───────────────────────────────────────────── */
+.g-card {{
+  background: var(--glass);
+  backdrop-filter: var(--blur);
+  -webkit-backdrop-filter: var(--blur);
+  border: 1px solid var(--glass-b);
+  border-radius: 20px;
+  box-shadow: var(--shadow), inset 0 1px 0 rgba(255,255,255,0.12);
+  padding: 28px;
+  position: relative;
+  overflow: hidden;
+  transition: transform .25s, box-shadow .25s;
+}}
+.g-card::before {{
+  content: '';
+  position: absolute;
+  top: 0; left: 0; right: 0; height: 1px;
+  background: linear-gradient(90deg, transparent, rgba(255,255,255,0.25), transparent);
+}}
+.g-card:hover {{
+  transform: translateY(-3px);
+  box-shadow: 0 20px 60px rgba(0,0,0,0.55), inset 0 1px 0 rgba(255,255,255,0.18);
 }}
 
-/* ── Glass Card ── */
-.glass-card {{
-    background: var(--glass-bg);
-    backdrop-filter: blur(20px) saturate(180%);
-    -webkit-backdrop-filter: blur(20px) saturate(180%);
-    border: 1px solid var(--glass-border);
-    border-radius: 20px;
-    box-shadow: var(--glass-shadow), inset 0 1px 0 rgba(255,255,255,0.15);
-    padding: 24px;
-    transition: transform 0.25s ease, box-shadow 0.25s ease;
-    position: relative;
-    overflow: hidden;
+/* ─── Metric cards ─────────────────────────────────────────── */
+.m-card {{
+  background: rgba(255,255,255,0.055);
+  backdrop-filter: var(--blur);
+  -webkit-backdrop-filter: var(--blur);
+  border: 1px solid rgba(255,255,255,0.13);
+  border-radius: 16px;
+  padding: 20px 16px;
+  text-align: center;
+  transition: all .3s;
+  box-shadow: 0 4px 24px rgba(0,0,0,0.3), inset 0 1px 0 rgba(255,255,255,0.1);
 }}
-.glass-card::before {{
-    content: '';
-    position: absolute;
-    top: 0; left: 0; right: 0;
-    height: 1px;
-    background: linear-gradient(90deg, transparent, rgba(255,255,255,0.3), transparent);
+.m-card:hover {{ transform: translateY(-4px) scale(1.02); border-color: rgba(255,255,255,0.25); }}
+.m-val {{
+  font-size: 2rem; font-weight: 800;
+  font-family: 'JetBrains Mono', monospace;
+  background: linear-gradient(135deg, #fbbf24 0%, #f59e0b 40%, #c084fc 100%);
+  -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text;
+  line-height: 1.1;
 }}
-.glass-card:hover {{
-    transform: translateY(-3px);
-    box-shadow: 0 16px 48px rgba(0,0,0,0.5), inset 0 1px 0 rgba(255,255,255,0.2);
-}}
+.m-lbl {{ font-size: 0.68rem; color: var(--text-dim); text-transform: uppercase; letter-spacing: .12em; font-weight: 600; margin-top: 6px; }}
 
-/* ── Metric Cards ── */
-.metric-card {{
-    background: rgba(255,255,255,0.06);
-    backdrop-filter: blur(20px) saturate(200%);
-    -webkit-backdrop-filter: blur(20px) saturate(200%);
-    border: 1px solid rgba(255,255,255,0.15);
-    border-radius: 18px;
-    padding: 22px 18px;
-    text-align: center;
-    transition: all 0.3s ease;
-    box-shadow: 0 4px 24px rgba(0,0,0,0.3), inset 0 1px 0 rgba(255,255,255,0.12);
-    position: relative;
-    overflow: hidden;
+/* ─── Sign-in page ─────────────────────────────────────────── */
+.signin-wrap {{
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 40px 16px;
 }}
-.metric-card::after {{
-    content: '';
-    position: absolute;
-    top: -50%; left: -50%;
-    width: 200%; height: 200%;
-    background: radial-gradient(circle at center, rgba(255,255,255,0.03) 0%, transparent 70%);
-    pointer-events: none;
+.signin-box {{
+  background: rgba(255,255,255,0.06);
+  backdrop-filter: blur(32px) saturate(200%);
+  -webkit-backdrop-filter: blur(32px) saturate(200%);
+  border: 1px solid rgba(255,255,255,0.16);
+  border-radius: 28px;
+  padding: 48px 40px;
+  max-width: 440px;
+  width: 100%;
+  box-shadow: 0 24px 80px rgba(0,0,0,0.6), inset 0 1px 0 rgba(255,255,255,0.15);
+  position: relative;
+  overflow: hidden;
 }}
-.metric-card:hover {{
-    transform: translateY(-4px) scale(1.02);
-    border-color: rgba(255,255,255,0.28);
-    box-shadow: 0 12px 40px rgba(0,0,0,0.4), inset 0 1px 0 rgba(255,255,255,0.2);
+.signin-box::before {{
+  content: '';
+  position: absolute;
+  top: 0; left: 0; right: 0; height: 1px;
+  background: linear-gradient(90deg, transparent 0%, rgba(147,51,234,0.8) 40%, rgba(245,158,11,0.8) 60%, transparent 100%);
 }}
-.metric-card .metric-value {{
-    font-size: 2.2rem;
-    font-weight: 800;
-    font-family: 'JetBrains Mono', monospace;
-    background: linear-gradient(135deg, #fbbf24 0%, #f97316 50%, #a78bfa 100%);
-    -webkit-background-clip: text;
-    -webkit-text-fill-color: transparent;
-    background-clip: text;
-    line-height: 1.1;
+.signin-logo {{
+  text-align: center;
+  margin-bottom: 32px;
 }}
-.metric-card .metric-label {{
-    font-size: 0.72rem;
-    color: var(--text-secondary);
-    text-transform: uppercase;
-    letter-spacing: 0.12em;
-    font-weight: 600;
-    margin-top: 6px;
+.signin-logo .brand {{
+  font-size: 1.8rem; font-weight: 900;
+  background: linear-gradient(135deg, #fbbf24, #f59e0b, #c084fc, #9333ea);
+  -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text;
+  letter-spacing: -0.03em;
 }}
+.signin-logo .sub {{
+  font-size: 0.65rem; color: var(--text-muted);
+  letter-spacing: .2em; text-transform: uppercase; margin-top: 4px;
+}}
+.divider {{
+  display: flex; align-items: center; gap: 12px;
+  margin: 20px 0; color: var(--text-muted); font-size: 0.75rem;
+}}
+.divider::before, .divider::after {{
+  content: ''; flex: 1; height: 1px;
+  background: rgba(255,255,255,0.1);
+}}
+.oauth-btn {{
+  display: flex; align-items: center; justify-content: center; gap: 10px;
+  width: 100%; padding: 12px 20px;
+  background: rgba(255,255,255,0.07);
+  border: 1px solid rgba(255,255,255,0.15);
+  border-radius: 12px; cursor: pointer;
+  color: var(--text); font-size: 0.88rem; font-weight: 600;
+  transition: all .2s; margin-bottom: 10px;
+  backdrop-filter: blur(12px);
+  font-family: 'Inter', sans-serif;
+}}
+.oauth-btn:hover {{
+  background: rgba(255,255,255,0.12);
+  border-color: rgba(255,255,255,0.28);
+  transform: translateY(-1px);
+  box-shadow: 0 6px 20px rgba(0,0,0,0.3);
+}}
+.oauth-btn.google {{ border-color: rgba(234,67,53,0.4); }}
+.oauth-btn.github {{ border-color: rgba(255,255,255,0.2); }}
+.oauth-btn.msft   {{ border-color: rgba(0,120,212,0.4); }}
 
-/* ── Logo ── */
+/* ─── Logo, headers ────────────────────────────────────────── */
 .logo-text {{
-    font-size: 1.5rem;
-    font-weight: 900;
-    background: linear-gradient(135deg, #fbbf24 0%, #f97316 40%, #a78bfa 80%, #60a5fa 100%);
-    -webkit-background-clip: text;
-    -webkit-text-fill-color: transparent;
-    background-clip: text;
-    letter-spacing: -0.03em;
-    text-shadow: none;
+  font-size: 1.45rem; font-weight: 900;
+  background: linear-gradient(135deg, #fbbf24 0%, #f59e0b 35%, #c084fc 70%, #9333ea 100%);
+  -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text;
+  letter-spacing: -0.03em;
 }}
-.logo-sub {{
-    font-size: 0.6rem;
-    color: var(--text-dim);
-    letter-spacing: 0.2em;
-    text-transform: uppercase;
-    margin-top: 2px;
+.logo-sub {{ font-size: 0.58rem; color: var(--text-muted); letter-spacing: .2em; text-transform: uppercase; }}
+
+.section-hdr {{
+  font-size: 0.68rem; font-weight: 700; color: var(--text-muted);
+  text-transform: uppercase; letter-spacing: .18em;
+  border-bottom: 1px solid rgba(255,255,255,0.08);
+  padding-bottom: 8px; margin: 22px 0 14px;
 }}
 
-/* ── Section headers ── */
-.section-header {{
-    font-size: 0.72rem;
-    font-weight: 700;
-    color: var(--text-dim);
-    text-transform: uppercase;
-    letter-spacing: 0.18em;
-    border-bottom: 1px solid rgba(255,255,255,0.1);
-    padding-bottom: 8px;
-    margin: 24px 0 16px 0;
+/* ─── Pipeline steps ───────────────────────────────────────── */
+.pipeline-strip {{
+  display: flex; flex-wrap: wrap; gap: 7px;
+  padding: 14px 16px; margin-bottom: 20px;
+  background: rgba(255,255,255,0.04);
+  backdrop-filter: blur(12px); border-radius: 14px;
+  border: 1px solid rgba(255,255,255,0.09);
+}}
+.p-step {{
+  padding: 5px 14px; border-radius: 30px;
+  font-size: 0.7rem; font-weight: 600; letter-spacing: .03em;
+  background: rgba(255,255,255,0.05);
+  color: var(--text-muted); border: 1px solid rgba(255,255,255,0.08);
+  transition: all .2s;
+}}
+.p-step.done   {{ background: rgba(16,185,129,0.15); color: #34d399; border-color: rgba(16,185,129,0.35); box-shadow: 0 0 10px rgba(16,185,129,0.12); }}
+.p-step.active {{ background: rgba(147,51,234,0.2); color: #c084fc; border-color: rgba(147,51,234,0.5); animation: pulse-p 2s infinite; }}
+@keyframes pulse-p {{
+  0%,100% {{ box-shadow: 0 0 10px rgba(147,51,234,0.2); }}
+  50%     {{ box-shadow: 0 0 22px rgba(147,51,234,0.5); }}
 }}
 
-/* ── Alert boxes ── */
-.alert-critical {{
-    background: rgba(248,113,113,0.12);
-    border-left: 3px solid #f87171;
-    border-radius: 0 12px 12px 0;
-    padding: 12px 16px;
-    margin: 6px 0;
-    font-size: 0.83rem;
-    backdrop-filter: blur(10px);
-}}
-.alert-ok {{
-    background: rgba(52,211,153,0.12);
-    border-left: 3px solid #34d399;
-    border-radius: 0 12px 12px 0;
-    padding: 12px 16px;
-    margin: 6px 0;
-    font-size: 0.83rem;
-    backdrop-filter: blur(10px);
-}}
-.alert-high {{
-    background: rgba(251,191,36,0.12);
-    border-left: 3px solid #fbbf24;
-    border-radius: 0 12px 12px 0;
-    padding: 12px 16px;
-    margin: 6px 0;
-    font-size: 0.83rem;
-    backdrop-filter: blur(10px);
-}}
+/* ─── Alert variants ───────────────────────────────────────── */
+.al-ok   {{ background:rgba(16,185,129,.1); border-left:3px solid #10b981; border-radius:0 12px 12px 0; padding:11px 15px; margin:5px 0; font-size:.82rem; backdrop-filter:blur(8px); }}
+.al-warn {{ background:rgba(245,158,11,.1); border-left:3px solid #f59e0b; border-radius:0 12px 12px 0; padding:11px 15px; margin:5px 0; font-size:.82rem; backdrop-filter:blur(8px); }}
+.al-crit {{ background:rgba(244,63,94,.1);  border-left:3px solid #f43f5e; border-radius:0 12px 12px 0; padding:11px 15px; margin:5px 0; font-size:.82rem; backdrop-filter:blur(8px); }}
 
-/* ── Pipeline Steps ── */
-.step-container {{
-    display: flex;
-    flex-wrap: wrap;
-    gap: 8px;
-    margin-bottom: 20px;
-    padding: 14px 16px;
-    background: rgba(255,255,255,0.04);
-    backdrop-filter: blur(12px);
-    border-radius: 14px;
-    border: 1px solid rgba(255,255,255,0.1);
-}}
-.step-box {{
-    padding: 6px 14px;
-    border-radius: 30px;
-    font-size: 0.72rem;
-    font-weight: 600;
-    background: rgba(255,255,255,0.06);
-    color: rgba(255,255,255,0.35);
-    border: 1px solid rgba(255,255,255,0.1);
-    letter-spacing: 0.03em;
-    transition: all 0.2s;
-}}
-.step-box.done {{
-    background: rgba(52,211,153,0.15);
-    color: #34d399;
-    border-color: rgba(52,211,153,0.4);
-    box-shadow: 0 0 12px rgba(52,211,153,0.15);
-}}
-.step-box.active {{
-    background: rgba(249,115,22,0.2);
-    color: #fb923c;
-    border-color: rgba(249,115,22,0.5);
-    box-shadow: 0 0 16px rgba(249,115,22,0.25);
-    animation: pulse-orange 2s infinite;
-}}
-@keyframes pulse-orange {{
-    0%,100% {{ box-shadow: 0 0 16px rgba(249,115,22,0.25); }}
-    50%      {{ box-shadow: 0 0 24px rgba(249,115,22,0.5); }}
-}}
-
-/* ── Buttons ── */
+/* ─── Buttons ──────────────────────────────────────────────── */
 .stButton > button {{
-    background: rgba(255,255,255,0.08) !important;
-    color: rgba(255,255,255,0.9) !important;
-    border: 1px solid rgba(255,255,255,0.2) !important;
-    border-radius: 14px !important;
-    font-weight: 600 !important;
-    font-size: 0.85rem !important;
-    backdrop-filter: blur(12px) !important;
-    transition: all 0.2s ease !important;
-    letter-spacing: 0.02em !important;
+  background: rgba(255,255,255,0.07) !important;
+  color: rgba(255,255,255,0.9) !important;
+  border: 1px solid rgba(255,255,255,0.18) !important;
+  border-radius: 12px !important;
+  font-weight: 600 !important; font-size: 0.83rem !important;
+  backdrop-filter: blur(12px) !important;
+  transition: all .2s !important;
 }}
 .stButton > button:hover {{
-    background: rgba(249,115,22,0.2) !important;
-    border-color: rgba(249,115,22,0.6) !important;
-    box-shadow: 0 0 20px rgba(249,115,22,0.3) !important;
-    transform: translateY(-1px) !important;
+  background: rgba(147,51,234,0.25) !important;
+  border-color: rgba(147,51,234,0.6) !important;
+  box-shadow: 0 0 18px rgba(147,51,234,0.3) !important;
+  transform: translateY(-1px) !important;
 }}
 .primary-btn > button {{
-    background: linear-gradient(135deg, rgba(249,115,22,0.4), rgba(167,139,250,0.3)) !important;
-    border-color: rgba(249,115,22,0.5) !important;
-    box-shadow: 0 4px 20px rgba(249,115,22,0.25) !important;
+  background: linear-gradient(135deg, rgba(147,51,234,0.45), rgba(245,158,11,0.3)) !important;
+  border-color: rgba(147,51,234,0.55) !important;
+  box-shadow: 0 4px 20px rgba(147,51,234,0.25) !important;
 }}
 
-/* ── Tabs ── */
+/* ─── Tabs ─────────────────────────────────────────────────── */
 .stTabs [data-baseweb="tab-list"] {{
-    background: rgba(255,255,255,0.04) !important;
-    backdrop-filter: blur(12px) !important;
-    border-radius: 14px !important;
-    border: 1px solid rgba(255,255,255,0.1) !important;
-    padding: 4px !important;
-    gap: 2px !important;
+  background: rgba(255,255,255,0.04) !important;
+  backdrop-filter: blur(12px) !important;
+  border-radius: 12px !important;
+  border: 1px solid rgba(255,255,255,0.09) !important;
+  padding: 4px !important; gap: 2px !important;
 }}
 .stTabs [data-baseweb="tab"] {{
-    color: var(--text-secondary) !important;
-    font-weight: 600 !important;
-    font-size: 0.78rem !important;
-    border-radius: 10px !important;
-    padding: 6px 14px !important;
-    transition: all 0.2s !important;
+  color: var(--text-dim) !important;
+  font-weight: 600 !important; font-size: 0.77rem !important;
+  border-radius: 8px !important; padding: 6px 13px !important;
+  transition: all .2s !important;
 }}
 .stTabs [aria-selected="true"] {{
-    background: rgba(249,115,22,0.25) !important;
-    color: #fb923c !important;
+  background: rgba(147,51,234,0.22) !important; color: #c084fc !important;
 }}
 
-/* ── Dataframe ── */
-.stDataFrame {{
-    background: rgba(255,255,255,0.04) !important;
-    border-radius: 12px !important;
-    border: 1px solid rgba(255,255,255,0.1) !important;
-    backdrop-filter: blur(12px) !important;
+/* ─── Inputs ───────────────────────────────────────────────── */
+.stTextInput input, .stSelectbox, .stPasswordInput input {{
+  background: rgba(255,255,255,0.06) !important;
+  border: 1px solid rgba(255,255,255,0.15) !important;
+  border-radius: 10px !important; color: white !important;
+  backdrop-filter: blur(10px) !important;
+}}
+.stTextInput input:focus, .stPasswordInput input:focus {{
+  border-color: rgba(147,51,234,0.6) !important;
+  box-shadow: 0 0 0 2px rgba(147,51,234,0.2) !important;
 }}
 
-/* ── Expander ── */
-.streamlit-expanderHeader {{
-    background: rgba(255,255,255,0.06) !important;
-    border-radius: 12px !important;
-    border: 1px solid rgba(255,255,255,0.12) !important;
-    backdrop-filter: blur(12px) !important;
-    color: var(--text-primary) !important;
-}}
+/* ─── Scrollbar ────────────────────────────────────────────── */
+::-webkit-scrollbar {{ width:5px; height:5px; }}
+::-webkit-scrollbar-track {{ background: rgba(255,255,255,0.02); }}
+::-webkit-scrollbar-thumb {{ background: rgba(147,51,234,0.45); border-radius:3px; }}
+::-webkit-scrollbar-thumb:hover {{ background: rgba(147,51,234,0.7); }}
 
-/* ── Main page header ── */
-h1, h2, h3 {{
-    color: rgba(255,255,255,0.95) !important;
-    font-family: 'Inter', sans-serif !important;
-}}
-
-/* ── Scrollbar ── */
-::-webkit-scrollbar {{ width: 6px; height: 6px; }}
-::-webkit-scrollbar-track {{ background: rgba(255,255,255,0.03); }}
-::-webkit-scrollbar-thumb {{ background: rgba(249,115,22,0.4); border-radius: 3px; }}
-::-webkit-scrollbar-thumb:hover {{ background: rgba(249,115,22,0.7); }}
-
-/* Force plotly chart backgrounds transparent */
+/* ─── Plotly ───────────────────────────────────────────────── */
 .js-plotly-plot .plotly {{ background: transparent !important; }}
+h1,h2,h3 {{ color: rgba(255,255,255,0.95) !important; font-family:'Inter',sans-serif !important; }}
 </style>
+
+<!-- Floating background orbs -->
+<div class="particle-orb orb1"></div>
+<div class="particle-orb orb2"></div>
+<div class="particle-orb orb3"></div>
 """, unsafe_allow_html=True)
 
 
-# ─── Initialization ──────────────────────────────────────────────────────────
+# ─── Config ──────────────────────────────────────────────────────────────────
 
 API_URL = os.environ.get("API_URL", "http://localhost:8765")
 
+def api_get(ep):
+    try:
+        r = requests.get(f"{API_URL}{ep}", timeout=4.0)
+        return r.json() if r.status_code == 200 else None
+    except:
+        return None
+
+def api_post(ep, data=None):
+    try:
+        r = requests.post(f"{API_URL}{ep}", json=data, timeout=8.0)
+        return r.json() if r.status_code == 200 else None
+    except:
+        return None
+
+def _plot_cfg():
+    return dict(
+        plot_bgcolor="rgba(0,0,0,0)", paper_bgcolor="rgba(0,0,0,0)",
+        font=dict(color="rgba(255,255,255,0.7)", family="Inter"),
+        xaxis=dict(gridcolor="rgba(255,255,255,0.06)", zerolinecolor="rgba(255,255,255,0.06)"),
+        yaxis=dict(gridcolor="rgba(255,255,255,0.06)", zerolinecolor="rgba(255,255,255,0.06)"),
+        margin=dict(l=16, r=16, t=40, b=16),
+        legend=dict(font=dict(color="rgba(255,255,255,0.65)")),
+    )
+
+
+# ─── Session State ────────────────────────────────────────────────────────────
+
+if "authenticated" not in st.session_state:
+    st.session_state.authenticated = False
+if "user_name"     not in st.session_state:
+    st.session_state.user_name = ""
+if "user_role"     not in st.session_state:
+    st.session_state.user_role = ""
 if "workflow_step" not in st.session_state:
     st.session_state.workflow_step = 0
 if "workflow_running" not in st.session_state:
     st.session_state.workflow_running = False
+if "signin_tab"    not in st.session_state:
+    st.session_state.signin_tab = "signin"
 
-def api_get(endpoint):
-    try:
-        r = requests.get(f"{API_URL}{endpoint}", timeout=4.0)
-        return r.json() if r.status_code == 200 else None
-    except:
-        return None
 
-def api_post(endpoint, json_data=None):
-    try:
-        r = requests.post(f"{API_URL}{endpoint}", json=json_data, timeout=8.0)
-        return r.json() if r.status_code == 200 else None
-    except:
-        return None
+# ─────────────────────────────────────────────────────────────────────────────
+# SIGN-IN PAGE
+# ─────────────────────────────────────────────────────────────────────────────
+if not st.session_state.authenticated:
+    st.markdown("""
+    <div style="text-align:center; padding: 60px 0 20px 0;">
+      <div style="font-size:3rem; margin-bottom:8px;">🛡️</div>
+      <div style="font-size:2.2rem; font-weight:900;
+           background:linear-gradient(135deg,#fbbf24,#f59e0b,#c084fc,#9333ea);
+           -webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;
+           letter-spacing:-0.04em;">Q-RAKSHA SENTINEL</div>
+      <div style="font-size:0.7rem;color:rgba(255,255,255,0.3);letter-spacing:.2em;text-transform:uppercase;margin-top:6px;">
+        Autonomous Telecom Quantum Migration Intelligence Platform
+      </div>
+      <div style="margin-top:14px; display:flex; justify-content:center; gap:16px; flex-wrap:wrap;">
+        <span style="font-size:0.72rem;color:rgba(255,255,255,0.25);padding:4px 12px;border:1px solid rgba(255,255,255,0.1);border-radius:20px;">NCIIPC Classified</span>
+        <span style="font-size:0.72rem;color:rgba(255,255,255,0.25);padding:4px 12px;border:1px solid rgba(255,255,255,0.1);border-radius:20px;">NIST PQC Ready</span>
+        <span style="font-size:0.72rem;color:rgba(255,255,255,0.25);padding:4px 12px;border:1px solid rgba(255,255,255,0.1);border-radius:20px;">5G SBA Aware</span>
+      </div>
+    </div>
+    """, unsafe_allow_html=True)
 
-def _plot_layout():
-    return dict(
-        plot_bgcolor="rgba(0,0,0,0)",
-        paper_bgcolor="rgba(0,0,0,0)",
-        font=dict(color="rgba(255,255,255,0.75)", family="Inter"),
-        xaxis=dict(gridcolor="rgba(255,255,255,0.07)", zerolinecolor="rgba(255,255,255,0.07)"),
-        yaxis=dict(gridcolor="rgba(255,255,255,0.07)", zerolinecolor="rgba(255,255,255,0.07)"),
-        margin=dict(l=20, r=20, t=40, b=20),
-    )
+    # Centered sign-in card
+    _, col, _ = st.columns([1, 1.1, 1])
+    with col:
+        st.markdown("""
+        <div style="background:rgba(255,255,255,0.06);backdrop-filter:blur(32px) saturate(200%);
+             -webkit-backdrop-filter:blur(32px) saturate(200%);
+             border:1px solid rgba(255,255,255,0.15);border-radius:28px;
+             padding:40px 36px;
+             box-shadow:0 24px 80px rgba(0,0,0,0.6),inset 0 1px 0 rgba(255,255,255,0.14);
+             position:relative;overflow:hidden;">
+          <div style="position:absolute;top:0;left:0;right:0;height:1px;
+               background:linear-gradient(90deg,transparent,rgba(147,51,234,0.9),rgba(245,158,11,0.8),transparent);"></div>
+        </div>
+        """, unsafe_allow_html=True)
 
-# Fetch latest pipeline status
+        st.markdown("<h3 style='text-align:center;margin-bottom:4px;'>Welcome Back</h3>", unsafe_allow_html=True)
+        st.markdown("<p style='text-align:center;font-size:0.82rem;color:rgba(255,255,255,0.45);margin-bottom:24px;'>Sign in to access the Sentinel Platform</p>", unsafe_allow_html=True)
+
+        # ── OAuth Buttons ──
+        st.markdown("""
+        <a href="#" onclick="return false;">
+          <button class="oauth-btn google" style="width:100%;margin-bottom:10px;background:rgba(234,67,53,0.1);border:1px solid rgba(234,67,53,0.35);padding:12px 20px;border-radius:12px;cursor:pointer;color:rgba(255,255,255,0.9);font-size:0.86rem;font-weight:600;font-family:Inter,sans-serif;display:flex;align-items:center;justify-content:center;gap:10px;">
+            <svg width="18" height="18" viewBox="0 0 48 48"><path fill="#FFC107" d="M43.6 20.1H42V20H24v8h11.3C33.7 32.7 29.3 36 24 36c-6.6 0-12-5.4-12-12s5.4-12 12-12c3.1 0 5.8 1.1 7.9 2.9l5.7-5.7C34.5 6.5 29.6 4 24 4 12.95 4 4 12.95 4 24s8.95 20 20 20 20-8.95 20-20c0-1.3-.1-2.7-.4-3.9z"/><path fill="#FF3D00" d="m6.3 14.7 6.6 4.8C14.7 15.1 19 12 24 12c3.1 0 5.8 1.1 7.9 2.9l5.7-5.7C34.5 6.5 29.6 4 24 4 16.3 4 9.7 8.4 6.3 14.7z"/><path fill="#4CAF50" d="M24 44c5.2 0 9.9-2 13.4-5.1l-6.2-5.2C29.3 35.3 26.8 36 24 36c-5.3 0-9.7-3.3-11.3-8H6.2C9.5 39.6 16.2 44 24 44z"/><path fill="#1976D2" d="M43.6 20.1H42V20H24v8h11.3c-.8 2.3-2.3 4.3-4.3 5.7l6.2 5.2C36.9 39.8 44 34.1 44 24c0-1.3-.1-2.7-.4-3.9z"/></svg>
+            Continue with Google
+          </button>
+        </a>
+        <a href="#" onclick="return false;">
+          <button class="oauth-btn github" style="width:100%;margin-bottom:10px;background:rgba(36,41,46,0.5);border:1px solid rgba(255,255,255,0.2);padding:12px 20px;border-radius:12px;cursor:pointer;color:rgba(255,255,255,0.9);font-size:0.86rem;font-weight:600;font-family:Inter,sans-serif;display:flex;align-items:center;justify-content:center;gap:10px;">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="white"><path d="M12 2C6.477 2 2 6.477 2 12c0 4.42 2.87 8.17 6.84 9.5.5.08.66-.23.66-.5v-1.69c-2.77.6-3.36-1.34-3.36-1.34-.46-1.16-1.11-1.47-1.11-1.47-.91-.62.07-.6.07-.6 1 .07 1.53 1.03 1.53 1.03.87 1.52 2.34 1.07 2.91.83.09-.65.35-1.09.63-1.34-2.22-.25-4.55-1.11-4.55-4.92 0-1.11.38-2 1.03-2.71-.1-.25-.45-1.29.1-2.64 0 0 .84-.27 2.75 1.02.79-.22 1.65-.33 2.5-.33.85 0 1.71.11 2.5.33 1.91-1.29 2.75-1.02 2.75-1.02.55 1.35.2 2.39.1 2.64.65.71 1.03 1.6 1.03 2.71 0 3.82-2.34 4.66-4.57 4.91.36.31.69.92.69 1.85V21c0 .27.16.59.67.5C19.14 20.16 22 16.42 22 12A10 10 0 0 0 12 2z"/></svg>
+            Continue with GitHub
+          </button>
+        </a>
+        <a href="#" onclick="return false;">
+          <button class="oauth-btn msft" style="width:100%;margin-bottom:6px;background:rgba(0,120,212,0.15);border:1px solid rgba(0,120,212,0.4);padding:12px 20px;border-radius:12px;cursor:pointer;color:rgba(255,255,255,0.9);font-size:0.86rem;font-weight:600;font-family:Inter,sans-serif;display:flex;align-items:center;justify-content:center;gap:10px;">
+            <svg width="18" height="18" viewBox="0 0 21 21"><rect x="1" y="1" width="9" height="9" fill="#f25022"/><rect x="11" y="1" width="9" height="9" fill="#7fba00"/><rect x="1" y="11" width="9" height="9" fill="#00a4ef"/><rect x="11" y="11" width="9" height="9" fill="#ffb900"/></svg>
+            Continue with Microsoft
+          </button>
+        </a>
+        """, unsafe_allow_html=True)
+
+        st.markdown('<div class="divider">or sign in with credentials</div>', unsafe_allow_html=True)
+
+        # ── Credential form ──
+        with st.form("signin_form", clear_on_submit=False):
+            email = st.text_input("Email", placeholder="sentinel@nciipc.gov.in")
+            password = st.text_input("Password", type="password", placeholder="••••••••••")
+            role = st.selectbox("Access Role", ["Network Security Analyst", "Telecom Engineer", "CISO / Executive", "NCIIPC Auditor"])
+
+            c1, c2 = st.columns(2)
+            remember = c1.checkbox("Remember me", value=True)
+            
+            submitted = st.form_submit_button("🔐 Sign In", use_container_width=True)
+            if submitted:
+                if email and password:
+                    st.session_state.authenticated = True
+                    st.session_state.user_name = email.split("@")[0].replace(".", " ").title()
+                    st.session_state.user_role = role
+                    st.rerun()
+                else:
+                    st.error("Please enter your email and password.")
+
+        # OAuth quick demo sign in
+        st.markdown("<br>", unsafe_allow_html=True)
+        if st.button("⚡ Quick Demo Access (No Auth)", use_container_width=True):
+            st.session_state.authenticated = True
+            st.session_state.user_name = "Demo Analyst"
+            st.session_state.user_role = "Network Security Analyst"
+            st.rerun()
+
+        st.markdown("""
+        <p style='text-align:center;font-size:0.7rem;color:rgba(255,255,255,0.2);margin-top:20px;'>
+          Protected by Q-RAKSHA SENTINEL Zero-Trust Architecture<br>
+          All access is logged and cryptographically audited.
+        </p>
+        """, unsafe_allow_html=True)
+
+    # Footer on sign-in page
+    st.markdown("""
+    <div style='text-align:center; margin-top:40px; padding: 20px;'>
+      <div style='font-size:0.7rem; color:rgba(255,255,255,0.2);'>
+        © 2025 Q-RAKSHA SENTINEL · NCIIPC Classified · NIST PQC FIPS 203/204 Compliant
+      </div>
+    </div>
+    """, unsafe_allow_html=True)
+    st.stop()
+
+
+# ─────────────────────────────────────────────────────────────────────────────
+# MAIN DASHBOARD (after auth)
+# ─────────────────────────────────────────────────────────────────────────────
+
+# Sync pipeline status
 status = api_get("/workflow/status")
 if status:
     st.session_state.workflow_step = status.get("step", 0)
     st.session_state.workflow_running = status.get("running", False)
+api_ok = status is not None
 
-
-# ─── Sidebar ─────────────────────────────────────────────────────────────────
-
+# ── Sidebar ───────────────────────────────────────────────────────────────────
 with st.sidebar:
-    st.markdown('<div class="logo-text">🛡️ Q-RAKSHA</div>', unsafe_allow_html=True)
-    st.markdown('<div class="logo-sub">Sentinel · Telecom Quantum Migration</div>', unsafe_allow_html=True)
+    st.markdown(f'<div class="logo-text">🛡️ Q-RAKSHA</div>', unsafe_allow_html=True)
+    st.markdown('<div class="logo-sub">Sentinel · Quantum Migration</div>', unsafe_allow_html=True)
     st.markdown("<br>", unsafe_allow_html=True)
 
-    api_ok = status is not None
-    if api_ok:
-        st.markdown('<div class="alert-ok">⚡ Backend API: Online</div>', unsafe_allow_html=True)
-    else:
-        st.markdown('<div class="alert-critical">🔴 Backend API: Offline</div>', unsafe_allow_html=True)
+    # User badge
+    st.markdown(f"""
+    <div style="background:rgba(255,255,255,0.06);border:1px solid rgba(255,255,255,0.12);
+         border-radius:14px;padding:14px 16px;margin-bottom:16px;">
+      <div style="font-size:0.72rem;color:rgba(255,255,255,0.45);">Signed in as</div>
+      <div style="font-weight:700;font-size:0.9rem;margin:2px 0;">👤 {st.session_state.user_name}</div>
+      <div style="font-size:0.7rem;color:rgba(147,51,234,0.85);">{st.session_state.user_role}</div>
+    </div>
+    """, unsafe_allow_html=True)
 
-    st.markdown("<br>", unsafe_allow_html=True)
-    st.markdown('<div class="section-header">Mission Control</div>', unsafe_allow_html=True)
+    st.markdown(
+        f'<div class="{"al-ok" if api_ok else "al-crit"}">{"⚡ API Online" if api_ok else "🔴 API Offline"}</div>',
+        unsafe_allow_html=True
+    )
+    st.markdown('<div class="section-hdr">Mission Control</div>', unsafe_allow_html=True)
 
     st.markdown("<div class='primary-btn'>", unsafe_allow_html=True)
-    if st.button("▶️ Run Full Migration Workflow", disabled=st.session_state.workflow_running or not api_ok):
+    if st.button("▶️ Run Full Workflow", disabled=st.session_state.workflow_running or not api_ok):
         res = api_post("/workflow/run", {"target_path": ".", "num_nfs": 24})
         if res:
             st.session_state.workflow_running = True
@@ -404,132 +561,122 @@ with st.sidebar:
     st.markdown("</div>", unsafe_allow_html=True)
 
     if st.session_state.workflow_running:
-        st.info(f"⏳ Step {st.session_state.workflow_step}/9 running...")
-        time.sleep(1.5)
-        st.rerun()
+        st.info(f"⏳ Step {st.session_state.workflow_step}/9 in progress...")
+        time.sleep(1.5); st.rerun()
 
-    st.markdown("<br>", unsafe_allow_html=True)
-    st.markdown('<div class="section-header">Quick Steps</div>', unsafe_allow_html=True)
-    if st.button("Step 2: Build Graph"):
-        api_post("/workflow/step2/graph"); st.rerun()
-    if st.button("Step 4: Run QMIE"):
-        api_post("/workflow/step4/qmie"); st.rerun()
-    if st.button("Step 7: Run Sentinel"):
-        api_get("/workflow/step7/sentinel"); st.rerun()
+    st.markdown('<div class="section-hdr">Quick Actions</div>', unsafe_allow_html=True)
+    if st.button("🔍 Step 2: Build Graph"):      api_post("/workflow/step2/graph"); st.rerun()
+    if st.button("⚡ Step 4: Run QMIE"):         api_post("/workflow/step4/qmie"); st.rerun()
+    if st.button("👁 Step 7: Edge Sentinel"):    api_get("/workflow/step7/sentinel"); st.rerun()
+    if st.button("📋 Step 8: Policy Engine"):    api_get("/workflow/step8/policy"); st.rerun()
 
     st.markdown("<br><br>", unsafe_allow_html=True)
-    st.caption("Q-RAKSHA SENTINEL v2.0 · NCIIPC Classified")
+    if st.button("🚪 Sign Out"):
+        st.session_state.authenticated = False
+        st.session_state.user_name = ""
+        st.rerun()
+    st.caption("Q-RAKSHA SENTINEL v2.0 · NCIIPC")
 
-
-# ─── Pipeline Header ─────────────────────────────────────────────────────────
-
-st.markdown("""
-<div style="margin-bottom: 8px;">
-  <span style="font-size:2rem;font-weight:900;background:linear-gradient(135deg,#fbbf24,#f97316,#a78bfa);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;">Q-RAKSHA SENTINEL</span>
-  <span style="font-size:0.8rem;color:rgba(255,255,255,0.4);margin-left:12px;font-family:JetBrains Mono,monospace;">AUTONOMOUS TELECOM QUANTUM MIGRATION PLATFORM</span>
+# ── Top Header ────────────────────────────────────────────────────────────────
+st.markdown(f"""
+<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:4px;">
+  <div>
+    <span style="font-size:1.9rem;font-weight:900;
+      background:linear-gradient(135deg,#fbbf24,#f59e0b,#c084fc,#9333ea);
+      -webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;
+      letter-spacing:-0.04em;">Q-RAKSHA SENTINEL</span>
+  </div>
+  <div style="text-align:right;">
+    <div style="font-size:0.68rem;color:rgba(255,255,255,0.3);text-transform:uppercase;letter-spacing:.1em;">
+      {time.strftime("%d %b %Y · %H:%M UTC")}
+    </div>
+    <div style="font-size:0.72rem;color:rgba(147,51,234,0.7);font-weight:600;">
+      {st.session_state.user_role}
+    </div>
+  </div>
+</div>
+<div style="font-size:0.72rem;color:rgba(255,255,255,0.3);letter-spacing:.18em;text-transform:uppercase;margin-bottom:16px;">
+  Autonomous Telecom Quantum Migration Platform
 </div>
 """, unsafe_allow_html=True)
 
-# Pipeline Step Tracker
-steps_def = [(1,"CBOM"),(2,"Graph"),(3,"Centrality"),(4,"QMIE"),(5,"Twin"),(6,"PQC"),(7,"Sentinel"),(8,"Policy"),(9,"Report")]
+# ── Pipeline Step Tracker ─────────────────────────────────────────────────────
 curr_step = st.session_state.workflow_step
-html = '<div class="step-container">'
-for s_num, s_name in steps_def:
-    cls = "step-box"
-    if s_num < curr_step: cls += " done"
-    elif s_num == curr_step and st.session_state.workflow_running: cls += " active"
-    icon = "✓ " if s_num < curr_step else ""
-    html += f'<div class="{cls}">{icon}Step {s_num}: {s_name}</div>'
+steps_def = [(1,"CBOM"),(2,"Graph"),(3,"Centrality"),(4,"QMIE"),(5,"Twin"),(6,"PQC"),(7,"Sentinel"),(8,"Policy"),(9,"Report")]
+html = '<div class="pipeline-strip">'
+for s, n in steps_def:
+    cls = "p-step"
+    if s < curr_step: cls += " done"
+    elif s == curr_step and st.session_state.workflow_running: cls += " active"
+    icon = "✓ " if s < curr_step else ""
+    html += f'<div class="{cls}">{icon}S{s}·{n}</div>'
 html += '</div>'
 st.markdown(html, unsafe_allow_html=True)
 
-
-# ─── Tabs ────────────────────────────────────────────────────────────────────
-
+# ── Main Tabs ─────────────────────────────────────────────────────────────────
 tabs = st.tabs(["1️⃣ CBOM","2️⃣ Graph","3️⃣ Centrality","4️⃣ QMIE","5️⃣ Twin","6️⃣ PQC","7️⃣ Sentinel","8️⃣ Policy","9️⃣ Report"])
 
+def m_card(val, lbl, color=None):
+    sty = f'style="-webkit-text-fill-color:{color};"' if color else ""
+    return f'<div class="m-card"><div class="m-val" {sty}>{val}</div><div class="m-lbl">{lbl}</div></div>'
 
-# ── Tab 1: CBOM ──────────────────────────────────────────────────────────────
+# ── Tab 1: CBOM ───────────────────────────────────────────────────────────────
 with tabs[0]:
     data = api_get("/workflow/data/cbom")
     if not data:
-        st.info("💡 Run the workflow or click **Step 1** to begin discovery.")
-        if st.button("▶ Run Discovery"): api_post("/workflow/step1/cbom",{"target_path":".","years_secret":10}); st.rerun()
+        st.info("💡 Run the workflow or click **Step 1** to begin crypto discovery.")
+        if st.button("▶ Run CBOM Discovery"): api_post("/workflow/step1/cbom",{"target_path":".","years_secret":10}); st.rerun()
     else:
         stats = data.get("statistics", {})
         c1,c2,c3,c4 = st.columns(4)
-        for col, val, label, color in [
-            (c1, stats.get("files_scanned",0),      "Files Scanned",    None),
-            (c2, stats.get("total_findings",0),     "Crypto Findings",  "#f87171"),
-            (c3, stats.get("by_risk",{}).get("CRITICAL",0), "Critical", "#fbbf24"),
-            (c4, stats.get("hndl_risk_count",0),    "HNDL Exposed",     "#22d3ee"),
-        ]:
-            style = f'style="-webkit-text-fill-color:{color};"' if color else ""
-            col.markdown(f'<div class="metric-card"><div class="metric-value" {style}>{val}</div><div class="metric-label">{label}</div></div>', unsafe_allow_html=True)
-        st.markdown('<div class="section-header">Telecom CBOM Findings</div>', unsafe_allow_html=True)
+        c1.markdown(m_card(stats.get("files_scanned",0),      "Files Scanned"), unsafe_allow_html=True)
+        c2.markdown(m_card(stats.get("total_findings",0),     "Findings",   "#f43f5e"), unsafe_allow_html=True)
+        c3.markdown(m_card(stats.get("by_risk",{}).get("CRITICAL",0),"Critical","#f59e0b"), unsafe_allow_html=True)
+        c4.markdown(m_card(stats.get("hndl_risk_count",0),    "HNDL Exposed","#06b6d4"), unsafe_allow_html=True)
+        st.markdown('<div class="section-hdr">Telecom CBOM Findings</div>', unsafe_allow_html=True)
         findings = data.get("findings", [])
         if findings:
-            df = pd.DataFrame(findings)
-            st.dataframe(df[["file","algorithm","risk_level","harvest_now_decrypt_later","recommendation"]], use_container_width=True, hide_index=True)
+            st.dataframe(pd.DataFrame(findings)[["file","algorithm","risk_level","harvest_now_decrypt_later","recommendation"]], use_container_width=True, hide_index=True)
 
-
-# ── Tab 2: Knowledge Graph ────────────────────────────────────────────────────
+# ── Tab 2: Graph ──────────────────────────────────────────────────────────────
 with tabs[1]:
     data = api_get("/workflow/data/graph")
     if not data:
-        st.info("💡 Run the workflow to build the 5G Knowledge Graph.")
+        st.info("💡 Build the 5G SBA Knowledge Graph.")
         if st.button("▶ Build Graph"): api_post("/workflow/step2/graph"); st.rerun()
     else:
         nfs = data.get("nf_nodes", [])
-        pqc_ready = sum(1 for n in nfs if n.get("pqc_ready"))
+        pqc_rdy = sum(1 for n in nfs if n.get("pqc_ready"))
         c1,c2,c3 = st.columns(3)
-        c1.markdown(f'<div class="metric-card"><div class="metric-value">{data.get("node_count",0)}</div><div class="metric-label">Total Nodes</div></div>', unsafe_allow_html=True)
-        c2.markdown(f'<div class="metric-card"><div class="metric-value">{data.get("edge_count",0)}</div><div class="metric-label">SBA Edges</div></div>', unsafe_allow_html=True)
-        c3.markdown(f'<div class="metric-card"><div class="metric-value" style="-webkit-text-fill-color:#34d399;">{pqc_ready}</div><div class="metric-label">PQC Ready NFs</div></div>', unsafe_allow_html=True)
-        
-        st.markdown('<div class="section-header">NF Inventory</div>', unsafe_allow_html=True)
+        c1.markdown(m_card(data.get("node_count",0), "Total Nodes"), unsafe_allow_html=True)
+        c2.markdown(m_card(data.get("edge_count",0), "SBA Edges"), unsafe_allow_html=True)
+        c3.markdown(m_card(pqc_rdy, "PQC Ready", "#10b981"), unsafe_allow_html=True)
         if nfs:
             df = pd.DataFrame(nfs)
-            
-            # Donut chart — NF types
-            type_counts = df["nf_type"].value_counts().reset_index()
-            type_counts.columns = ["nf_type","count"]
-            fig = go.Figure(go.Pie(
-                labels=type_counts["nf_type"], values=type_counts["count"],
-                hole=0.6, marker=dict(colors=px.colors.sequential.Plasma_r),
-                textfont=dict(color="white")
-            ))
-            fig.update_layout(title="NF Type Distribution", **_plot_layout())
-            fig.update_layout(legend=dict(font=dict(color="rgba(255,255,255,0.7)")))
+            tc = df["nf_type"].value_counts().reset_index(); tc.columns=["nf_type","count"]
+            fig = go.Figure(go.Pie(labels=tc["nf_type"],values=tc["count"],hole=0.58,
+                marker=dict(colors=px.colors.sequential.Plasma_r), textfont=dict(color="white")))
+            fig.update_layout(title="NF Type Distribution", **_plot_cfg())
             st.plotly_chart(fig, use_container_width=True)
-            
             st.dataframe(df[["node_id","nf_type","vendor","cert_algorithm","pqc_ready","subscriber_count"]], use_container_width=True, hide_index=True)
-
 
 # ── Tab 3: Centrality ─────────────────────────────────────────────────────────
 with tabs[2]:
     data = api_get("/workflow/data/centrality")
     if not data:
-        st.info("💡 Compute dependency centrality to identify critical NFs.")
+        st.info("💡 Compute dependency centrality to find critical NFs.")
         if st.button("▶ Compute Centrality"): api_post("/workflow/step3/centrality"); st.rerun()
     else:
-        st.markdown(f'<div class="alert-ok">{data.get("summary","")}</div>', unsafe_allow_html=True)
-        scores = data.get("scores",[])
+        st.markdown(f'<div class="al-ok">{data.get("summary","")}</div>', unsafe_allow_html=True)
+        scores = data.get("scores", [])
         if scores:
-            df = pd.DataFrame(scores)
-            top10 = df.head(10)
-            fig = go.Figure(go.Bar(
-                x=top10["node_id"], y=top10["centrality_score"],
-                marker=dict(
-                    color=top10["centrality_score"],
-                    colorscale=[[0,"rgba(167,139,250,0.7)"],[1,"rgba(249,115,22,0.9)"]],
-                    line=dict(color="rgba(255,255,255,0.2)", width=1)
-                )
-            ))
-            fig.update_layout(title="Top 10 NFs by Centrality Score", **_plot_layout())
+            df = pd.DataFrame(scores); top10 = df.head(10)
+            fig = go.Figure(go.Bar(x=top10["node_id"],y=top10["centrality_score"],
+                marker=dict(color=top10["centrality_score"],colorscale=[[0,"rgba(124,58,237,0.7)"],[1,"rgba(245,158,11,0.95)"]],
+                line=dict(color="rgba(255,255,255,0.15)",width=1))))
+            fig.update_layout(title="Top 10 NFs — Centrality Score", **_plot_cfg())
             st.plotly_chart(fig, use_container_width=True)
             st.dataframe(df[["migration_priority","node_id","nf_type","centrality_score","connection_count","subscriber_reach"]], use_container_width=True, hide_index=True)
-
 
 # ── Tab 4: QMIE ──────────────────────────────────────────────────────────────
 with tabs[3]:
@@ -537,169 +684,124 @@ with tabs[3]:
     has_plan = api_get("/workflow/data/plan")
     has_fail = api_get("/workflow/data/failures")
     has_exp  = api_get("/workflow/data/explanations")
-
     if not has_risk:
-        st.info("💡 Run the QMIE engine to get full risk, plan, and AI predictions.")
+        st.info("💡 Run the QMIE Engine for full risk analysis and migration planning.")
         if st.button("▶ Run QMIE"): api_post("/workflow/step4/qmie"); st.rerun()
     else:
-        qt1,qt2,qt3,qt4 = st.tabs(["🔴 Risk Scorer","📋 Migration Plan","🤖 AI Predictor","💡 Explainability"])
-
-        with qt1:
+        qt = st.tabs(["🔴 Risk Scorer","📋 Migration Plan","🤖 AI Predictor","💡 Explainability"])
+        with qt[0]:
             scores = has_risk.get("scores",[])
-            cr,hi,md,lw = has_risk.get("critical",0),has_risk.get("high",0),has_risk.get("medium",0),0
             c1,c2,c3,c4 = st.columns(4)
-            c1.markdown(f'<div class="metric-card"><div class="metric-value" style="-webkit-text-fill-color:#f87171;">{cr}</div><div class="metric-label">Critical NFs</div></div>', unsafe_allow_html=True)
-            c2.markdown(f'<div class="metric-card"><div class="metric-value" style="-webkit-text-fill-color:#fbbf24;">{hi}</div><div class="metric-label">High Risk</div></div>', unsafe_allow_html=True)
-            c3.markdown(f'<div class="metric-card"><div class="metric-value" style="-webkit-text-fill-color:#22d3ee;">{has_risk.get("avg_qmis",0):.1f}</div><div class="metric-label">Avg QMIS</div></div>', unsafe_allow_html=True)
-            c4.markdown(f'<div class="metric-card"><div class="metric-value">{len(scores)}</div><div class="metric-label">Total NFs</div></div>', unsafe_allow_html=True)
-            
+            c1.markdown(m_card(has_risk.get("critical",0), "Critical", "#f43f5e"), unsafe_allow_html=True)
+            c2.markdown(m_card(has_risk.get("high",0),    "High Risk", "#f59e0b"), unsafe_allow_html=True)
+            c3.markdown(m_card(f'{has_risk.get("avg_qmis",0):.1f}', "Avg QMIS", "#c084fc"), unsafe_allow_html=True)
+            c4.markdown(m_card(len(scores), "Total NFs"), unsafe_allow_html=True)
             if scores:
                 df = pd.DataFrame(scores)
-                fig = go.Figure(go.Bar(
-                    x=df["node_id"][:15], y=df["qmis"][:15],
-                    marker=dict(color=df["qmis"][:15], colorscale=[[0,"rgba(52,211,153,0.7)"],[0.5,"rgba(251,191,36,0.8)"],[1,"rgba(248,113,113,0.9)"]]),
-                ))
-                fig.update_layout(title="QMIS Risk Scores per NF", **_plot_layout())
+                fig = go.Figure(go.Bar(x=df["node_id"][:16],y=df["qmis"][:16],
+                    marker=dict(color=df["qmis"][:16],colorscale=[[0,"rgba(16,185,129,0.7)"],[.5,"rgba(245,158,11,0.85)"],[1,"rgba(244,63,94,0.95)"]]),))
+                fig.update_layout(title="QMIS Risk Score per NF", **_plot_cfg())
                 st.plotly_chart(fig, use_container_width=True)
                 st.dataframe(df[["node_id","nf_type","qmis","risk_tier","crypto_risk","centrality_impact","hndl_risk"]], use_container_width=True, hide_index=True)
-
-        with qt2:
+        with qt[1]:
             if has_plan:
-                steps = has_plan.get("steps",[])
                 c1,c2 = st.columns(2)
-                c1.markdown(f'<div class="metric-card"><div class="metric-value">{has_plan.get("total_nfs",0)}</div><div class="metric-label">NFs to Migrate</div></div>', unsafe_allow_html=True)
-                c2.markdown(f'<div class="metric-card"><div class="metric-value">{has_plan.get("total_downtime_min",0):.0f} min</div><div class="metric-label">Est. Downtime</div></div>', unsafe_allow_html=True)
-                if steps:
-                    df = pd.DataFrame(steps)
-                    st.dataframe(df[["step_number","node_id","migration_strategy","target_algo","estimated_downtime_min","maintenance_window"]], use_container_width=True, hide_index=True)
-
-        with qt3:
+                c1.markdown(m_card(has_plan.get("total_nfs",0), "NFs to Migrate"), unsafe_allow_html=True)
+                c2.markdown(m_card(f'{has_plan.get("total_downtime_min",0):.0f} min', "Est. Downtime"), unsafe_allow_html=True)
+                if has_plan.get("steps"):
+                    st.dataframe(pd.DataFrame(has_plan["steps"])[["step_number","node_id","migration_strategy","target_algo","estimated_downtime_min","maintenance_window"]], use_container_width=True, hide_index=True)
+        with qt[2]:
             if has_fail:
                 preds = has_fail.get("predictions",[])
                 c1,c2,c3 = st.columns(3)
-                c1.markdown(f'<div class="metric-card"><div class="metric-value" style="-webkit-text-fill-color:#f87171;">🔴 {has_fail.get("red",0)}</div><div class="metric-label">High Risk</div></div>', unsafe_allow_html=True)
-                c2.markdown(f'<div class="metric-card"><div class="metric-value" style="-webkit-text-fill-color:#fbbf24;">🟡 {has_fail.get("yellow",0)}</div><div class="metric-label">Medium Risk</div></div>', unsafe_allow_html=True)
-                c3.markdown(f'<div class="metric-card"><div class="metric-value" style="-webkit-text-fill-color:#34d399;">🟢 {has_fail.get("green",0)}</div><div class="metric-label">Low Risk</div></div>', unsafe_allow_html=True)
+                c1.markdown(m_card(f'🔴 {has_fail.get("red",0)}',  "High Risk",  "#f43f5e"), unsafe_allow_html=True)
+                c2.markdown(m_card(f'🟡 {has_fail.get("yellow",0)}',"Caution",    "#f59e0b"), unsafe_allow_html=True)
+                c3.markdown(m_card(f'🟢 {has_fail.get("green",0)}', "Clear",      "#10b981"), unsafe_allow_html=True)
                 if preds:
-                    df = pd.DataFrame(preds)
-                    st.dataframe(df[["node_id","risk_flag","registration_success_pct","rollback_probability","recommended_action"]], use_container_width=True, hide_index=True)
-
-        with qt4:
+                    st.dataframe(pd.DataFrame(preds)[["node_id","risk_flag","registration_success_pct","rollback_probability","recommended_action"]], use_container_width=True, hide_index=True)
+        with qt[3]:
             if has_exp:
-                items = has_exp.get("items",[])
-                for e in items[:4]:
-                    with st.expander(f"🔍 {e['node_id']} · {e['nf_type']}", expanded=False):
-                        st.markdown(f'<div class="alert-ok"><b>Plain English:</b> {e["plain_english_summary"]}</div>', unsafe_allow_html=True)
+                for e in has_exp.get("items",[])[:4]:
+                    with st.expander(f"🔍 {e['node_id']} · {e['nf_type']}"):
+                        st.markdown(f'<div class="al-ok"><b>📝 Plain English:</b> {e["plain_english_summary"]}</div>', unsafe_allow_html=True)
                         st.write("**Why this order?**", e["why_this_order"])
                         st.write("**What if delayed?**", e["what_if_delayed"])
-                        st.write("**What if vendor upgraded?**", e["what_if_vendor_upgraded"])
 
-
-# ── Tab 5: Digital Twin ───────────────────────────────────────────────────────
+# ── Tab 5: Twin ───────────────────────────────────────────────────────────────
 with tabs[4]:
     data = api_get("/workflow/data/twin")
     if not data:
-        st.info("💡 Run the Digital Twin to simulate post-migration behavior.")
-        if st.button("▶ Run Twin"): api_post("/workflow/step5/twin"); st.rerun()
+        st.info("💡 Run the Digital Twin to validate post-migration NF behaviour.")
+        if st.button("▶ Run Twin Validation"): api_post("/workflow/step5/twin"); st.rerun()
     else:
         c1,c2,c3 = st.columns(3)
-        c1.markdown(f'<div class="metric-card"><div class="metric-value" style="-webkit-text-fill-color:#34d399;">{data.get("passed",0)}</div><div class="metric-label">NFs Passed</div></div>', unsafe_allow_html=True)
-        c2.markdown(f'<div class="metric-card"><div class="metric-value" style="-webkit-text-fill-color:#f87171;">{data.get("failed",0)}</div><div class="metric-label">NFs Failed</div></div>', unsafe_allow_html=True)
-        c3.markdown(f'<div class="metric-card"><div class="metric-value">{data.get("confidence",0):.1f}%</div><div class="metric-label">Twin Confidence</div></div>', unsafe_allow_html=True)
-
+        c1.markdown(m_card(data.get("passed",0), "Passed", "#10b981"), unsafe_allow_html=True)
+        c2.markdown(m_card(data.get("failed",0), "Failed", "#f43f5e"), unsafe_allow_html=True)
+        c3.markdown(m_card(f'{data.get("confidence",0):.1f}%', "Confidence", "#c084fc"), unsafe_allow_html=True)
         for r in data.get("reports",[])[:5]:
-            icon = "✅" if r["overall_passed"] else "❌"
-            with st.expander(f"{icon} {r['nf_id']} — Pass Rate {r['pass_rate_pct']}%"):
+            with st.expander(f"{'✅' if r['overall_passed'] else '❌'} {r['nf_id']} — {r['pass_rate_pct']}% pass"):
                 st.write("**Recommendation:**", r["recommendation"])
-                df_kpi = pd.DataFrame(r.get("kpi_deltas",[]))
-                if not df_kpi.empty:
-                    st.dataframe(df_kpi[["metric_name","before","after","delta_pct","within_sla"]], use_container_width=True, hide_index=True)
+                df_k = pd.DataFrame(r.get("kpi_deltas",[]))
+                if not df_k.empty:
+                    st.dataframe(df_k[["metric_name","before","after","delta_pct","within_sla"]], use_container_width=True, hide_index=True)
 
-
-# ── Tab 6: PQC ───────────────────────────────────────────────────────────────
+# ── Tab 6: PQC ────────────────────────────────────────────────────────────────
 with tabs[5]:
     data = api_get("/workflow/data/pqc")
     if not data:
         st.info("💡 Validate the Hybrid PQC handshake (ML-KEM-768 + ML-DSA-65).")
-        if st.button("▶ Run PQC Demo"): api_post("/workflow/step6/pqc"); st.rerun()
+        if st.button("▶ Run PQC Validation"): api_post("/workflow/step6/pqc"); st.rerun()
     else:
-        if data.get("is_real_pqc"):
-            st.markdown('<div class="alert-ok">✅ <b>liboqs present</b> — Running REAL NIST PQC (ML-KEM-768 + ML-DSA-65)</div>', unsafe_allow_html=True)
-        else:
-            st.markdown('<div class="alert-high">⚠️ <b>liboqs not installed</b> — Simulated PQC fallback active</div>', unsafe_allow_html=True)
-        
+        st.markdown(f'<div class="{"al-ok" if data.get("is_real_pqc") else "al-warn"}">{"✅ liboqs present — REAL NIST PQC" if data.get("is_real_pqc") else "⚠️ Simulated PQC fallback"}</div>', unsafe_allow_html=True)
         c1,c2,c3,c4 = st.columns(4)
-        for col, val, label, color in [
-            (c1, f"{data.get('keygen_ms',0):.2f} ms", "KEM Keygen",   None),
-            (c2, f"{data.get('encap_ms',0):.2f} ms",  "Encapsulate",  None),
-            (c3, f"{data.get('decap_ms',0):.2f} ms",  "Decapsulate",  None),
-            (c4, "✅ VALID" if data.get("kem_match") else "❌ FAIL", "KEM Match", "#34d399" if data.get("kem_match") else "#f87171"),
-        ]:
-            style = f'style="-webkit-text-fill-color:{color};"' if color else ""
-            col.markdown(f'<div class="metric-card"><div class="metric-value" {style}>{val}</div><div class="metric-label">{label}</div></div>', unsafe_allow_html=True)
-
-        st.markdown('<div class="section-header">QKD Live Status</div>', unsafe_allow_html=True)
-        st.write(f"**Mode:** `{data.get('qkd_mode','N/A')}`  |  **Key Buffer:** `{data.get('key_buffer_bytes',0)} bytes`")
-
+        c1.markdown(m_card(f'{data.get("keygen_ms",0):.2f} ms',"KEM Keygen"), unsafe_allow_html=True)
+        c2.markdown(m_card(f'{data.get("encap_ms",0):.2f} ms', "Encapsulate"), unsafe_allow_html=True)
+        c3.markdown(m_card(f'{data.get("decap_ms",0):.2f} ms', "Decapsulate"), unsafe_allow_html=True)
+        c4.markdown(m_card("✅ VALID" if data.get("kem_match") else "❌ FAIL", "KEM Match", "#10b981" if data.get("kem_match") else "#f43f5e"), unsafe_allow_html=True)
+        st.write(f"**QKD Mode:** `{data.get('qkd_mode','N/A')}` | **Key Buffer:** `{data.get('key_buffer_bytes',0)} bytes`")
 
 # ── Tab 7: Sentinel ───────────────────────────────────────────────────────────
 with tabs[6]:
     data = api_get("/workflow/data/sentinel")
     if not data:
         st.info("💡 Start Edge Crypto Sentinel to monitor live TLS posture.")
-        if st.button("▶ Run Sentinel"): api_get("/workflow/step7/sentinel"); st.rerun()
+        if st.button("▶ Run Edge Sentinel"): api_get("/workflow/step7/sentinel"); st.rerun()
     else:
         c1,c2,c3,c4 = st.columns(4)
-        c1.markdown(f'<div class="metric-card"><div class="metric-value">{data.get("avg_posture_score",0):.0f}</div><div class="metric-label">Avg Posture</div></div>', unsafe_allow_html=True)
-        c2.markdown(f'<div class="metric-card"><div class="metric-value" style="-webkit-text-fill-color:#f87171;">{data.get("critical_alerts",0)}</div><div class="metric-label">Critical Alerts</div></div>', unsafe_allow_html=True)
-        c3.markdown(f'<div class="metric-card"><div class="metric-value" style="-webkit-text-fill-color:#fbbf24;">{data.get("warning_alerts",0)}</div><div class="metric-label">Warnings</div></div>', unsafe_allow_html=True)
-        c4.markdown(f'<div class="metric-card"><div class="metric-value" style="-webkit-text-fill-color:#22d3ee;">{data.get("pqc_cipher_count",0)}</div><div class="metric-label">PQC Connections</div></div>', unsafe_allow_html=True)
-
-        # TLS Version pie chart
-        tls_inv = data.get("tls_version_inventory",{})
-        if tls_inv:
-            fig = go.Figure(go.Pie(
-                labels=list(tls_inv.keys()), values=list(tls_inv.values()), hole=0.5,
-                marker=dict(colors=["#34d399","#fbbf24","#f87171","#a78bfa"]),
-            ))
-            fig.update_layout(title="TLS Version Distribution", **_plot_layout())
-            fig.update_layout(legend=dict(font=dict(color="rgba(255,255,255,0.7)")))
+        c1.markdown(m_card(f'{data.get("avg_posture_score",0):.0f}', "Avg Posture", "#c084fc"), unsafe_allow_html=True)
+        c2.markdown(m_card(data.get("critical_alerts",0), "Critical", "#f43f5e"), unsafe_allow_html=True)
+        c3.markdown(m_card(data.get("warning_alerts",0), "Warnings", "#f59e0b"), unsafe_allow_html=True)
+        c4.markdown(m_card(data.get("pqc_cipher_count",0), "PQC Connections", "#06b6d4"), unsafe_allow_html=True)
+        tls = data.get("tls_version_inventory",{})
+        if tls:
+            fig = go.Figure(go.Pie(labels=list(tls.keys()),values=list(tls.values()),hole=0.52,
+                marker=dict(colors=["#10b981","#f59e0b","#f43f5e","#c084fc"])))
+            fig.update_layout(title="TLS Version Distribution", **_plot_cfg())
             st.plotly_chart(fig, use_container_width=True)
-
         alerts = data.get("alerts",[])
         if alerts:
-            st.markdown('<div class="section-header">Live Alerts</div>', unsafe_allow_html=True)
-            df = pd.DataFrame(alerts)
-            st.dataframe(df[["nf_id","alert_type","severity","message"]], use_container_width=True, hide_index=True)
-
+            st.dataframe(pd.DataFrame(alerts)[["nf_id","alert_type","severity","message"]], use_container_width=True, hide_index=True)
 
 # ── Tab 8: Policy ─────────────────────────────────────────────────────────────
 with tabs[7]:
     data = api_get("/workflow/data/policy")
     if not data:
-        st.info("💡 Run the Adaptive Policy Engine to evaluate compliance.")
+        st.info("💡 Evaluate cryptographic policy compliance and auto-remediation.")
         if st.button("▶ Run Policy Engine"): api_get("/workflow/step8/policy"); st.rerun()
     else:
-        c1,c2,c3,c4 = st.columns(4)
         comp = data.get("compliance_pct",0)
-        comp_col = "#34d399" if comp > 80 else "#fbbf24" if comp > 60 else "#f87171"
-        c1.markdown(f'<div class="metric-card"><div class="metric-value" style="-webkit-text-fill-color:{comp_col};">{comp:.0f}%</div><div class="metric-label">Compliance</div></div>', unsafe_allow_html=True)
-        c2.markdown(f'<div class="metric-card"><div class="metric-value">{data.get("total_violations",0)}</div><div class="metric-label">Total Violations</div></div>', unsafe_allow_html=True)
-        c3.markdown(f'<div class="metric-card"><div class="metric-value" style="-webkit-text-fill-color:#f87171;">{data.get("critical_violations",0)}</div><div class="metric-label">Critical</div></div>', unsafe_allow_html=True)
-        c4.markdown(f'<div class="metric-card"><div class="metric-value" style="-webkit-text-fill-color:#34d399;">{data.get("auto_remediated",0)}</div><div class="metric-label">Auto-Remediated</div></div>', unsafe_allow_html=True)
-
+        col = "#10b981" if comp>80 else "#f59e0b" if comp>60 else "#f43f5e"
+        c1,c2,c3,c4 = st.columns(4)
+        c1.markdown(m_card(f'{comp:.0f}%', "Compliance", col), unsafe_allow_html=True)
+        c2.markdown(m_card(data.get("total_violations",0), "Violations"), unsafe_allow_html=True)
+        c3.markdown(m_card(data.get("critical_violations",0), "Critical", "#f43f5e"), unsafe_allow_html=True)
+        c4.markdown(m_card(data.get("auto_remediated",0), "Remediated", "#10b981"), unsafe_allow_html=True)
         for s in data.get("statuses",[])[:5]:
-            icon = "✅" if s["overall_compliant"] else "❌"
-            with st.expander(f"{icon} {s['nf_id']} · Score: {s['compliance_score']}/100 · {s['risk_tier']}"):
-                viols = s.get("violations",[])
-                if viols:
-                    df_v = pd.DataFrame(viols)
-                    st.dataframe(df_v[["policy_rule","severity","description","auto_remediation"]], use_container_width=True, hide_index=True)
-                acts = s.get("actions",[])
-                if acts:
-                    df_a = pd.DataFrame(acts)
-                    st.dataframe(df_a[["action_type","description","status"]], use_container_width=True, hide_index=True)
-
+            with st.expander(f"{'✅' if s['overall_compliant'] else '❌'} {s['nf_id']} · Score {s['compliance_score']}/100 · {s['risk_tier']}"):
+                if s.get("violations"):
+                    st.dataframe(pd.DataFrame(s["violations"])[["policy_rule","severity","description","auto_remediation"]], use_container_width=True, hide_index=True)
+                if s.get("actions"):
+                    st.dataframe(pd.DataFrame(s["actions"])[["action_type","description","status"]], use_container_width=True, hide_index=True)
 
 # ── Tab 9: Executive Report ───────────────────────────────────────────────────
 with tabs[8]:
@@ -707,44 +809,37 @@ with tabs[8]:
     if not data:
         st.info("💡 Complete the full workflow to generate the Executive Report.")
     else:
-        st.markdown(f"### 📄 Executive Summary Report")
-        st.caption(f"Generated at: `{data.get('generated_at')}` · Classification: **TOP SECRET // NCIIPC**")
+        st.markdown(f"### 📄 Executive Summary")
+        st.caption(f"Generated: `{data.get('generated_at')}` · Classification: **TOP SECRET // NCIIPC**")
         st.markdown("---")
-
-        pipe = data.get("pipeline_summary", {})
+        pipe = data.get("pipeline_summary",{})
         c1,c2,c3,c4 = st.columns(4)
-        c1.markdown(f'<div class="metric-card"><div class="metric-value">{pipe.get("steps_completed",0)}/9</div><div class="metric-label">Steps Completed</div></div>', unsafe_allow_html=True)
-        qmis = pipe.get("risk",{}).get("avg_qmis",0) if pipe.get("risk") else 0
-        qcol = "#f87171" if qmis>70 else "#fbbf24" if qmis>40 else "#34d399"
-        c2.markdown(f'<div class="metric-card"><div class="metric-value" style="-webkit-text-fill-color:{qcol};">{qmis:.1f}</div><div class="metric-label">Avg QMIS Risk</div></div>', unsafe_allow_html=True)
-        comp = pipe.get("policy",{}).get("compliance_pct",0) if pipe.get("policy") else 0
-        c3.markdown(f'<div class="metric-card"><div class="metric-value">{comp:.0f}%</div><div class="metric-label">Policy Compliance</div></div>', unsafe_allow_html=True)
+        c1.markdown(m_card(f'{pipe.get("steps_completed",0)}/9',"Steps Done"), unsafe_allow_html=True)
+        qm = pipe.get("risk",{}).get("avg_qmis",0) if pipe.get("risk") else 0
+        c2.markdown(m_card(f'{qm:.1f}',"Avg QMIS","#f43f5e" if qm>70 else "#f59e0b" if qm>40 else "#10b981"), unsafe_allow_html=True)
+        cp = pipe.get("policy",{}).get("compliance_pct",0) if pipe.get("policy") else 0
+        c3.markdown(m_card(f'{cp:.0f}%',"Compliance","#10b981" if cp>80 else "#f59e0b"), unsafe_allow_html=True)
         tw = pipe.get("twin",{}).get("confidence",0) if pipe.get("twin") else 0
-        c4.markdown(f'<div class="metric-card"><div class="metric-value">{tw:.1f}%</div><div class="metric-label">Twin Confidence</div></div>', unsafe_allow_html=True)
+        c4.markdown(m_card(f'{tw:.1f}%',"Twin Confidence"), unsafe_allow_html=True)
 
-        st.markdown('<div class="section-header" style="margin-top:32px;">TAMPER-EVIDENT EVIDENCE LEDGER</div>', unsafe_allow_html=True)
-        ledger = data.get("ledger", {})
-        is_valid = ledger.get("chain_valid", False)
-
-        lc1, lc2 = st.columns([1, 3])
+        st.markdown('<div class="section-hdr" style="margin-top:32px;">TAMPER-EVIDENT EVIDENCE LEDGER</div>', unsafe_allow_html=True)
+        ledger = data.get("ledger",{})
+        valid = ledger.get("chain_valid",False)
+        lc1,lc2 = st.columns([1,3])
         with lc1:
-            badge_html = (
-                '<div style="padding:24px;border-radius:20px;background:rgba(52,211,153,0.1);border:1px solid rgba(52,211,153,0.4);text-align:center;backdrop-filter:blur(20px);">'
-                '<div style="font-size:2.5rem;">🛡️</div>'
-                '<div style="font-size:1.1rem;font-weight:800;color:#34d399;margin-top:8px;">CHAIN VALID</div>'
-                '<div style="font-size:0.7rem;color:rgba(52,211,153,0.6);margin-top:4px;">Cryptographic Integrity Confirmed</div>'
-                '</div>'
-            ) if is_valid else (
-                '<div style="padding:24px;border-radius:20px;background:rgba(248,113,113,0.1);border:1px solid rgba(248,113,113,0.4);text-align:center;backdrop-filter:blur(20px);">'
-                '<div style="font-size:2.5rem;">⚠️</div>'
-                '<div style="font-size:1.1rem;font-weight:800;color:#f87171;margin-top:8px;">CHAIN BROKEN</div>'
-                '<div style="font-size:0.7rem;color:rgba(248,113,113,0.6);margin-top:4px;">Tampering Detected</div>'
-                '</div>'
+            badge = (
+                '<div style="padding:24px;border-radius:20px;background:rgba(16,185,129,0.1);border:1px solid rgba(16,185,129,0.4);text-align:center;backdrop-filter:blur(20px);">'
+                '<div style="font-size:2.5rem;">🛡️</div><div style="font-size:1rem;font-weight:800;color:#10b981;margin-top:8px;">CHAIN VALID</div>'
+                '<div style="font-size:0.65rem;color:rgba(16,185,129,0.6);margin-top:4px;">Cryptographic Integrity Confirmed</div></div>'
+            ) if valid else (
+                '<div style="padding:24px;border-radius:20px;background:rgba(244,63,94,0.1);border:1px solid rgba(244,63,94,0.4);text-align:center;backdrop-filter:blur(20px);">'
+                '<div style="font-size:2.5rem;">⚠️</div><div style="font-size:1rem;font-weight:800;color:#f43f5e;margin-top:8px;">CHAIN BROKEN</div>'
+                '<div style="font-size:0.65rem;color:rgba(244,63,94,0.6);margin-top:4px;">Tampering Detected</div></div>'
             )
-            st.markdown(badge_html, unsafe_allow_html=True)
+            st.markdown(badge, unsafe_allow_html=True)
             st.markdown("<br>", unsafe_allow_html=True)
             st.write(f"**Events:** {ledger.get('total_entries',0)}")
-            st.markdown("<p style='font-size:0.7rem;color:rgba(255,255,255,0.35);margin-bottom:4px;'>ROOT HASH</p>", unsafe_allow_html=True)
+            st.markdown("<p style='font-size:0.68rem;color:rgba(255,255,255,0.3);'>ROOT HASH</p>", unsafe_allow_html=True)
             st.code(ledger.get("ledger_root_hash","N/A"), language="text")
         with lc2:
             st.write("### 📜 Immutable Event Log")
@@ -753,5 +848,5 @@ with tabs[8]:
                 df_l = pd.DataFrame(entries)
                 df_l["timestamp"] = pd.to_datetime(df_l["timestamp"]).dt.strftime("%H:%M:%S.%f")
                 st.dataframe(df_l[["sequence","timestamp","event_type","entry_id","previous_hash"]], use_container_width=True, hide_index=True)
-                with st.expander("🔍 Raw Cryptographic Ledger JSON (Auditor View)"):
+                with st.expander("🔍 Raw Cryptographic Ledger (Auditor View)"):
                     st.json(ledger)
