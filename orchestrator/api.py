@@ -222,10 +222,11 @@ async def upload_files(files: List[UploadFile] = File(...)):
         
     saved_files = []
     for file in files:
-        file_path = os.path.join(target_dir, file.filename)
+        safe_filename = os.path.basename(file.filename)
+        file_path = os.path.join(target_dir, safe_filename)
         with open(file_path, "wb") as buffer:
             shutil.copyfileobj(file.file, buffer)
-        saved_files.append(file.filename)
+        saved_files.append(safe_filename)
         
     return {"status": "success", "saved_files": saved_files, "target_path": target_dir}
 
