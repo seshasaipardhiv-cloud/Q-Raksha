@@ -1,8 +1,7 @@
 """
 Q-RAKSHA SENTINEL — Executive Dashboard (Professional Glass Edition)
-Full sign-in flow + live animated background + glassmorphism UI
+Full sign-in flow + dual-theme gradient backgrounds + glassmorphism UI
 """
-import base64
 import json
 import os
 import sys
@@ -18,13 +17,6 @@ import plotly.express as px
 import pandas as pd
 import requests
 
-# ── Background image ─────────────────────────────────────────────────────────
-_BG_PATH = Path(__file__).parent / "static" / "bg.png"
-_BG_B64 = ""
-if _BG_PATH.exists():
-    with open(_BG_PATH, "rb") as _f:
-        _BG_B64 = base64.b64encode(_f.read()).decode()
-
 st.set_page_config(
     page_title="Q-RAKSHA SENTINEL",
     page_icon="🛡️",
@@ -33,94 +25,70 @@ st.set_page_config(
 )
 
 # ─────────────────────────────────────────────────────────────────────────────
-# GLOBAL CSS — Live animated bg + full glassmorphism
+# GLOBAL CSS — Two themed CSS gradient backgrounds
 # ─────────────────────────────────────────────────────────────────────────────
-_bg_data = f"url('data:image/png;base64,{_BG_B64}')" if _BG_B64 else "linear-gradient(135deg,#1a0533 0%,#0d1a3a 100%)"
 
-st.markdown(f"""
+st.markdown("""
 <style>
 @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=JetBrains+Mono:wght@400;500;600&display=swap');
 
-/* ─── Root ─────────────────────────────────────────────────── */
-:root {{
-  --purple:   #9333ea;
-  --violet:   #7c3aed;
-  --gold:     #f59e0b;
-  --amber:    #fbbf24;
+/* ─── Root Variables ──────────────────────────────────────── */
+:root {
+  --crimson:  #dc2626;
+  --orange:   #ea580c;
+  --amber:    #f59e0b;
+  --gold:     #fbbf24;
   --rose:     #f43f5e;
   --cyan:     #06b6d4;
+  --teal:     #0d9488;
   --green:    #10b981;
   --glass:    rgba(255,255,255,0.06);
   --glass-b:  rgba(255,255,255,0.14);
   --blur:     blur(22px) saturate(180%);
-  --shadow:   0 8px 40px rgba(0,0,0,0.45);
+  --shadow:   0 8px 40px rgba(0,0,0,0.5);
   --text:     rgba(255,255,255,0.93);
   --text-dim: rgba(255,255,255,0.5);
   --text-muted: rgba(255,255,255,0.3);
-}}
+}
 
-/* ─── Live animated background ─────────────────────────────── */
-html, body, .stApp {{
+/* ─── Base ────────────────────────────────────────────────── */
+html, body, .stApp {
   font-family: 'Inter', sans-serif !important;
   color: var(--text) !important;
   overflow-x: hidden;
-}}
+}
 
-.stApp {{
-  background: none !important;
-}}
+/* ─── Dashboard background: Dark Red/Crimson Quantum Mesh ─── */
+.stApp {
+  background:
+    radial-gradient(ellipse 75% 55% at 50% 45%, rgba(180,30,15,0.28) 0%, transparent 65%),
+    radial-gradient(ellipse 55% 40% at 80% 20%, rgba(120,10,40,0.20) 0%, transparent 55%),
+    radial-gradient(ellipse 50% 50% at 15% 80%, rgba(80,0,20,0.18) 0%, transparent 50%),
+    radial-gradient(ellipse 40% 40% at 50% 10%, rgba(200,50,10,0.10) 0%, transparent 55%),
+    linear-gradient(155deg, #0c0008 0%, #150005 25%, #0f0010 50%, #080006 75%, #0a0000 100%) !important;
+}
 
-/* Pseudo-element for animated background */
-.stApp::before {{
-  content: '';
-  position: fixed;
-  inset: -10%;          /* slightly oversized so the zoom/pan doesn't clip */
-  z-index: -2;
-  background-image: {_bg_data};
-  background-size: cover;
-  background-position: center;
-  animation: bgBreath 18s ease-in-out infinite alternate;
-  filter: brightness(0.85) saturate(1.2);
-}}
-
-/* Overlay gradient veil */
-.stApp::after {{
+/* Geometric mesh overlay */
+.stApp::before {
   content: '';
   position: fixed;
   inset: 0;
-  z-index: -1;
-  background: 
-    radial-gradient(ellipse 80% 60% at 50% 50%, rgba(147,51,234,0.08) 0%, transparent 70%),
-    linear-gradient(180deg, rgba(5,3,20,0.45) 0%, rgba(8,4,28,0.55) 100%);
+  z-index: 0;
   pointer-events: none;
-}}
+  background-image:
+    url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='120' height='120'%3E%3Cdefs%3E%3Cpattern id='m' width='120' height='120' patternUnits='userSpaceOnUse'%3E%3Cpolygon points='0,60 60,0 120,60 60,120' fill='none' stroke='rgba(220,38,38,0.08)' stroke-width='0.8'/%3E%3Ccircle cx='0' cy='60' r='2' fill='rgba(220,38,38,0.14)'/%3E%3Ccircle cx='60' cy='0' r='2' fill='rgba(220,38,38,0.14)'/%3E%3Ccircle cx='120' cy='60' r='2' fill='rgba(220,38,38,0.14)'/%3E%3Ccircle cx='60' cy='120' r='2' fill='rgba(220,38,38,0.14)'/%3E%3Ccircle cx='60' cy='60' r='1.5' fill='rgba(245,158,11,0.12)'/%3E%3C/pattern%3E%3C/defs%3E%3Crect width='100%25' height='100%25' fill='url(%23m)'/%3E%3C/svg%3E");
+  opacity: 0.9;
+}
 
-@keyframes bgBreath {{
-  0%   {{ transform: scale(1.00) translate(0px, 0px);    filter: brightness(0.82) saturate(1.15); }}
-  25%  {{ transform: scale(1.06) translate(-8px, -4px);  filter: brightness(0.88) saturate(1.25); }}
-  50%  {{ transform: scale(1.03) translate(5px, 8px);    filter: brightness(0.85) saturate(1.20); }}
-  75%  {{ transform: scale(1.08) translate(-3px, 5px);   filter: brightness(0.90) saturate(1.30); }}
-  100% {{ transform: scale(1.04) translate(6px, -6px);   filter: brightness(0.86) saturate(1.18); }}
-}}
-
-/* Floating particle orbs */
-.particle-orb {{
+/* Dark veil */
+.stApp::after {
+  content: '';
   position: fixed;
-  border-radius: 50%;
-  filter: blur(80px);
+  inset: 0;
+  z-index: 0;
+  background: linear-gradient(180deg, rgba(0,0,0,0.35) 0%, rgba(0,0,0,0.15) 50%, rgba(0,0,0,0.45) 100%);
   pointer-events: none;
-  z-index: -1;
-  animation: floatOrb 12s ease-in-out infinite;
-}}
-.orb1 {{ width:400px;height:400px; background:rgba(147,51,234,0.18); top:-100px; left:-100px; animation-duration:14s; }}
-.orb2 {{ width:300px;height:300px; background:rgba(245,158,11,0.12); bottom:0; right:-80px; animation-duration:10s; animation-delay:-4s; }}
-.orb3 {{ width:250px;height:250px; background:rgba(6,182,212,0.10); top:40%; left:60%; animation-duration:16s; animation-delay:-8s; }}
-
-@keyframes floatOrb {{
-  0%,100% {{ transform: translate(0,0)   scale(1); }}
-  33%     {{ transform: translate(30px,-20px) scale(1.08); }}
-  66%     {{ transform: translate(-20px,30px) scale(0.94); }}
-}}
+}
 
 /* ─── Streamlit layout cleanup ─────────────────────────────── */
 [data-testid="stSidebar"] {{
@@ -414,63 +382,196 @@ if "signin_tab"    not in st.session_state:
 # SIGN-IN PAGE
 # ─────────────────────────────────────────────────────────────────────────────
 if not st.session_state.authenticated:
+
+    # Override the app background specifically for the login page
     st.markdown("""
-    <div style="text-align:center; padding: 60px 0 20px 0;">
-      <div style="font-size:3rem; margin-bottom:8px;">🛡️</div>
-      <div style="font-size:2.2rem; font-weight:900;
-           background:linear-gradient(135deg,#fbbf24,#f59e0b,#c084fc,#9333ea);
-           -webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;
-           letter-spacing:-0.04em;">Q-RAKSHA SENTINEL</div>
-      <div style="font-size:0.7rem;color:rgba(255,255,255,0.3);letter-spacing:.2em;text-transform:uppercase;margin-top:6px;">
-        Autonomous Telecom Quantum Migration Intelligence Platform
+    <style>
+    /* Login page — deep navy/teal quantum background */
+    .stApp {
+      background:
+        radial-gradient(ellipse 70% 60% at 25% 50%, rgba(13,148,136,0.22) 0%, transparent 60%),
+        radial-gradient(ellipse 60% 55% at 75% 50%, rgba(6,78,59,0.18) 0%, transparent 55%),
+        radial-gradient(ellipse 80% 40% at 50% 90%, rgba(15,118,110,0.12) 0%, transparent 55%),
+        radial-gradient(ellipse 50% 40% at 50% 5%,  rgba(20,50,80,0.20) 0%, transparent 50%),
+        linear-gradient(145deg, #020c10 0%, #040f18 30%, #030d14 60%, #010a0d 100%) !important;
+    }
+    /* Teal mesh overlay */
+    .stApp::before {
+      background-image:
+        url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='100' height='100'%3E%3Cdefs%3E%3Cpattern id='t' width='100' height='100' patternUnits='userSpaceOnUse'%3E%3Cpolygon points='0,50 50,0 100,50 50,100' fill='none' stroke='rgba(13,148,136,0.09)' stroke-width='0.7'/%3E%3Cline x1='0' y1='0' x2='100' y2='100' stroke='rgba(13,148,136,0.05)' stroke-width='0.5'/%3E%3Cline x1='100' y1='0' x2='0' y2='100' stroke='rgba(13,148,136,0.05)' stroke-width='0.5'/%3E%3Ccircle cx='50' cy='0' r='1.8' fill='rgba(13,148,136,0.18)'/%3E%3Ccircle cx='0' cy='50' r='1.8' fill='rgba(13,148,136,0.18)'/%3E%3Ccircle cx='100' cy='50' r='1.8' fill='rgba(13,148,136,0.18)'/%3E%3Ccircle cx='50' cy='100' r='1.8' fill='rgba(13,148,136,0.18)'/%3E%3Ccircle cx='50' cy='50' r='1.4' fill='rgba(251,191,36,0.1)'/%3E%3C/pattern%3E%3C/defs%3E%3Crect width='100%25' height='100%25' fill='url(%23t)'/%3E%3C/svg%3E") !important;
+    }
+    /* Login layout */
+    .login-wrap { min-height: 100vh; display: flex; }
+    .login-left {
+      flex: 1.1;
+      background:
+        radial-gradient(ellipse 90% 70% at 40% 50%, rgba(13,148,136,0.18) 0%, transparent 70%),
+        rgba(2,12,18,0.0);
+      display: flex; flex-direction: column;
+      justify-content: center; padding: 60px 56px;
+      border-right: 1px solid rgba(13,148,136,0.15);
+      backdrop-filter: blur(4px);
+    }
+    .login-right {
+      flex: 0.9;
+      display: flex; align-items: center; justify-content: center;
+      padding: 40px 48px;
+      background: rgba(0,0,0,0.15);
+      backdrop-filter: blur(8px);
+    }
+    .login-card {
+      width: 100%; max-width: 400px;
+      background: rgba(255,255,255,0.055);
+      backdrop-filter: blur(32px) saturate(200%);
+      -webkit-backdrop-filter: blur(32px) saturate(200%);
+      border: 1px solid rgba(255,255,255,0.12);
+      border-radius: 24px;
+      padding: 40px 36px;
+      box-shadow: 0 32px 80px rgba(0,0,0,0.6), inset 0 1px 0 rgba(255,255,255,0.1);
+      position: relative; overflow: hidden;
+    }
+    .login-card::before {
+      content: '';
+      position: absolute; top: 0; left: 0; right: 0; height: 1px;
+      background: linear-gradient(90deg, transparent, rgba(13,148,136,0.9), rgba(251,191,36,0.7), transparent);
+    }
+    .stat-box {
+      display: flex; align-items: center; gap: 14px;
+      padding: 14px 18px; margin-bottom: 12px;
+      background: rgba(13,148,136,0.08);
+      border: 1px solid rgba(13,148,136,0.18);
+      border-radius: 14px;
+      backdrop-filter: blur(8px);
+    }
+    .stat-icon { font-size: 1.5rem; }
+    .stat-val { font-size: 1.3rem; font-weight: 800; color: #5eead4; font-family: 'JetBrains Mono', monospace; }
+    .stat-lbl { font-size: 0.68rem; color: rgba(255,255,255,0.4); text-transform: uppercase; letter-spacing: .1em; }
+    .badge-row { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 28px; }
+    .badge {
+      font-size: 0.65rem; font-weight: 600; padding: 4px 12px;
+      border-radius: 20px; border: 1px solid rgba(13,148,136,0.3);
+      color: rgba(94,234,212,0.75); letter-spacing: .08em; text-transform: uppercase;
+    }
+    .oauth-row { display: flex; flex-direction: column; gap: 8px; margin: 16px 0; }
+    .o-btn {
+      display: flex; align-items: center; justify-content: center; gap: 10px;
+      padding: 11px 18px; border-radius: 12px; width: 100%;
+      font-size: 0.84rem; font-weight: 600; cursor: pointer; border: 1px solid;
+      color: rgba(255,255,255,0.88); font-family: 'Inter', sans-serif;
+      transition: all .2s; backdrop-filter: blur(10px);
+    }
+    .o-btn-g { background: rgba(234,67,53,0.1);  border-color: rgba(234,67,53,0.35); }
+    .o-btn-h { background: rgba(36,41,46,0.5);   border-color: rgba(255,255,255,0.18); }
+    .o-btn-m { background: rgba(0,120,212,0.12); border-color: rgba(0,120,212,0.38); }
+    .o-btn:hover { filter: brightness(1.2); transform: translateY(-1px); box-shadow: 0 6px 20px rgba(0,0,0,0.3); }
+    .sep { display: flex; align-items: center; gap: 10px; margin: 14px 0; color: rgba(255,255,255,0.25); font-size: 0.72rem; }
+    .sep::before,.sep::after { content:''; flex:1; height:1px; background: rgba(255,255,255,0.08); }
+    </style>
+    """, unsafe_allow_html=True)
+
+    # Two-column login layout using HTML
+    st.markdown("""
+    <div style="display:grid;grid-template-columns:1.1fr 0.9fr;min-height:100vh;">
+
+      <!-- LEFT: Brand panel -->
+      <div style="display:flex;flex-direction:column;justify-content:center;padding:60px 56px;
+           border-right:1px solid rgba(13,148,136,0.15);background:rgba(13,148,136,0.02);">
+
+        <div style="margin-bottom:40px;">
+          <div style="font-size:0.65rem;color:rgba(13,148,136,0.7);letter-spacing:.25em;text-transform:uppercase;margin-bottom:10px;">
+            NCIIPC · NIST PQC FIPS 203/204
+          </div>
+          <div style="font-size:2.6rem;font-weight:900;line-height:1;
+               background:linear-gradient(135deg,#fbbf24 0%,#f59e0b 35%,#5eead4 70%,#0d9488 100%);
+               -webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;
+               letter-spacing:-0.04em;margin-bottom:12px;">
+            Q-RAKSHA<br>SENTINEL
+          </div>
+          <div style="font-size:0.8rem;color:rgba(255,255,255,0.4);letter-spacing:.08em;max-width:320px;line-height:1.7;">
+            Autonomous 5G Telecom Quantum Migration Intelligence Platform. Protect against Harvest-Now-Decrypt-Later threats with AI-driven PQC orchestration.
+          </div>
+        </div>
+
+        <!-- Stats -->
+        <div style="display:flex;flex-direction:column;gap:10px;max-width:340px;">
+          <div style="display:flex;align-items:center;gap:14px;padding:14px 18px;
+               background:rgba(13,148,136,0.08);border:1px solid rgba(13,148,136,0.18);
+               border-radius:14px;backdrop-filter:blur(8px);">
+            <div style="font-size:1.4rem;">🔍</div>
+            <div>
+              <div style="font-size:1.2rem;font-weight:800;color:#5eead4;font-family:'JetBrains Mono',monospace;">10-Step</div>
+              <div style="font-size:0.66rem;color:rgba(255,255,255,0.35);text-transform:uppercase;letter-spacing:.1em;">AI Migration Pipeline</div>
+            </div>
+          </div>
+          <div style="display:flex;align-items:center;gap:14px;padding:14px 18px;
+               background:rgba(245,158,11,0.08);border:1px solid rgba(245,158,11,0.18);
+               border-radius:14px;backdrop-filter:blur(8px);">
+            <div style="font-size:1.4rem;">🛡️</div>
+            <div>
+              <div style="font-size:1.2rem;font-weight:800;color:#fbbf24;font-family:'JetBrains Mono',monospace;">ML-KEM-768</div>
+              <div style="font-size:0.66rem;color:rgba(255,255,255,0.35);text-transform:uppercase;letter-spacing:.1em;">NIST PQC Algorithm</div>
+            </div>
+          </div>
+          <div style="display:flex;align-items:center;gap:14px;padding:14px 18px;
+               background:rgba(16,185,129,0.08);border:1px solid rgba(16,185,129,0.18);
+               border-radius:14px;backdrop-filter:blur(8px);">
+            <div style="font-size:1.4rem;">📡</div>
+            <div>
+              <div style="font-size:1.2rem;font-weight:800;color:#34d399;font-family:'JetBrains Mono',monospace;">5G SBA</div>
+              <div style="font-size:0.66rem;color:rgba(255,255,255,0.35);text-transform:uppercase;letter-spacing:.1em;">Telecom-Aware Topology</div>
+            </div>
+          </div>
+        </div>
+
+        <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:28px;">
+          <span style="font-size:0.63rem;font-weight:600;padding:4px 11px;border-radius:20px;border:1px solid rgba(13,148,136,0.3);color:rgba(94,234,212,0.7);letter-spacing:.08em;text-transform:uppercase;">Zero Trust</span>
+          <span style="font-size:0.63rem;font-weight:600;padding:4px 11px;border-radius:20px;border:1px solid rgba(13,148,136,0.3);color:rgba(94,234,212,0.7);letter-spacing:.08em;text-transform:uppercase;">Tamper-Evident</span>
+          <span style="font-size:0.63rem;font-weight:600;padding:4px 11px;border-radius:20px;border:1px solid rgba(13,148,136,0.3);color:rgba(94,234,212,0.7);letter-spacing:.08em;text-transform:uppercase;">Digital Twin</span>
+          <span style="font-size:0.63rem;font-weight:600;padding:4px 11px;border-radius:20px;border:1px solid rgba(13,148,136,0.3);color:rgba(94,234,212,0.7);letter-spacing:.08em;text-transform:uppercase;">AI Predictor</span>
+        </div>
       </div>
-      <div style="margin-top:14px; display:flex; justify-content:center; gap:16px; flex-wrap:wrap;">
-        <span style="font-size:0.72rem;color:rgba(255,255,255,0.25);padding:4px 12px;border:1px solid rgba(255,255,255,0.1);border-radius:20px;">NCIIPC Classified</span>
-        <span style="font-size:0.72rem;color:rgba(255,255,255,0.25);padding:4px 12px;border:1px solid rgba(255,255,255,0.1);border-radius:20px;">NIST PQC Ready</span>
-        <span style="font-size:0.72rem;color:rgba(255,255,255,0.25);padding:4px 12px;border:1px solid rgba(255,255,255,0.1);border-radius:20px;">5G SBA Aware</span>
-      </div>
+
+      <!-- RIGHT: spacer (actual form rendered via Streamlit below) -->
+      <div></div>
     </div>
     """, unsafe_allow_html=True)
 
-    # Centered sign-in card
-    _, col, _ = st.columns([1, 1.1, 1])
-    with col:
+    # Use Streamlit columns to overlay the login card on the right
+    _, right_col = st.columns([1.1, 0.9])
+    with right_col:
         st.markdown("""
-        <div style="background:rgba(255,255,255,0.06);backdrop-filter:blur(32px) saturate(200%);
+        <div style="background:rgba(255,255,255,0.055);backdrop-filter:blur(32px) saturate(200%);
              -webkit-backdrop-filter:blur(32px) saturate(200%);
-             border:1px solid rgba(255,255,255,0.15);border-radius:28px;
-             padding:40px 36px;
-             box-shadow:0 24px 80px rgba(0,0,0,0.6),inset 0 1px 0 rgba(255,255,255,0.14);
-             position:relative;overflow:hidden;">
+             border:1px solid rgba(255,255,255,0.12);border-radius:24px;
+             padding:36px 32px;
+             box-shadow:0 32px 80px rgba(0,0,0,0.6),inset 0 1px 0 rgba(255,255,255,0.1);
+             position:relative;overflow:hidden;margin-top:-85vh;">
           <div style="position:absolute;top:0;left:0;right:0;height:1px;
-               background:linear-gradient(90deg,transparent,rgba(147,51,234,0.9),rgba(245,158,11,0.8),transparent);"></div>
+               background:linear-gradient(90deg,transparent,rgba(13,148,136,0.9),rgba(251,191,36,0.7),transparent);">
+          </div>
+          <div style="text-align:center;margin-bottom:26px;">
+            <div style="font-size:1.8rem;margin-bottom:4px;">🔐</div>
+            <div style="font-size:1.3rem;font-weight:800;color:rgba(255,255,255,0.95);">Secure Access Portal</div>
+            <div style="font-size:0.76rem;color:rgba(255,255,255,0.38);margin-top:4px;">Authenticated access to Q-RAKSHA SENTINEL</div>
+          </div>
         </div>
         """, unsafe_allow_html=True)
 
-        st.markdown("<h3 style='text-align:center;margin-bottom:4px;'>Welcome Back</h3>", unsafe_allow_html=True)
-        st.markdown("<p style='text-align:center;font-size:0.82rem;color:rgba(255,255,255,0.45);margin-bottom:24px;'>Sign in to access the Sentinel Platform</p>", unsafe_allow_html=True)
-
-        # ── OAuth Buttons ──
+        # OAuth Buttons
         st.markdown("""
-        <a href="#" onclick="return false;">
-          <button class="oauth-btn google" style="width:100%;margin-bottom:10px;background:rgba(234,67,53,0.1);border:1px solid rgba(234,67,53,0.35);padding:12px 20px;border-radius:12px;cursor:pointer;color:rgba(255,255,255,0.9);font-size:0.86rem;font-weight:600;font-family:Inter,sans-serif;display:flex;align-items:center;justify-content:center;gap:10px;">
-            <svg width="18" height="18" viewBox="0 0 48 48"><path fill="#FFC107" d="M43.6 20.1H42V20H24v8h11.3C33.7 32.7 29.3 36 24 36c-6.6 0-12-5.4-12-12s5.4-12 12-12c3.1 0 5.8 1.1 7.9 2.9l5.7-5.7C34.5 6.5 29.6 4 24 4 12.95 4 4 12.95 4 24s8.95 20 20 20 20-8.95 20-20c0-1.3-.1-2.7-.4-3.9z"/><path fill="#FF3D00" d="m6.3 14.7 6.6 4.8C14.7 15.1 19 12 24 12c3.1 0 5.8 1.1 7.9 2.9l5.7-5.7C34.5 6.5 29.6 4 24 4 16.3 4 9.7 8.4 6.3 14.7z"/><path fill="#4CAF50" d="M24 44c5.2 0 9.9-2 13.4-5.1l-6.2-5.2C29.3 35.3 26.8 36 24 36c-5.3 0-9.7-3.3-11.3-8H6.2C9.5 39.6 16.2 44 24 44z"/><path fill="#1976D2" d="M43.6 20.1H42V20H24v8h11.3c-.8 2.3-2.3 4.3-4.3 5.7l6.2 5.2C36.9 39.8 44 34.1 44 24c0-1.3-.1-2.7-.4-3.9z"/></svg>
+        <div style="display:flex;flex-direction:column;gap:8px;margin-bottom:4px;">
+          <button style="display:flex;align-items:center;justify-content:center;gap:10px;padding:12px;border-radius:12px;width:100%;font-size:0.84rem;font-weight:600;cursor:pointer;border:1px solid rgba(234,67,53,0.38);color:rgba(255,255,255,0.88);font-family:Inter,sans-serif;background:rgba(234,67,53,0.1);backdrop-filter:blur(10px);">
+            <svg width="17" height="17" viewBox="0 0 48 48"><path fill="#FFC107" d="M43.6 20.1H42V20H24v8h11.3C33.7 32.7 29.3 36 24 36c-6.6 0-12-5.4-12-12s5.4-12 12-12c3.1 0 5.8 1.1 7.9 2.9l5.7-5.7C34.5 6.5 29.6 4 24 4 12.95 4 4 12.95 4 24s8.95 20 20 20 20-8.95 20-20c0-1.3-.1-2.7-.4-3.9z"/><path fill="#FF3D00" d="m6.3 14.7 6.6 4.8C14.7 15.1 19 12 24 12c3.1 0 5.8 1.1 7.9 2.9l5.7-5.7C34.5 6.5 29.6 4 24 4 16.3 4 9.7 8.4 6.3 14.7z"/><path fill="#4CAF50" d="M24 44c5.2 0 9.9-2 13.4-5.1l-6.2-5.2C29.3 35.3 26.8 36 24 36c-5.3 0-9.7-3.3-11.3-8H6.2C9.5 39.6 16.2 44 24 44z"/><path fill="#1976D2" d="M43.6 20.1H42V20H24v8h11.3c-.8 2.3-2.3 4.3-4.3 5.7l6.2 5.2C36.9 39.8 44 34.1 44 24c0-1.3-.1-2.7-.4-3.9z"/></svg>
             Continue with Google
           </button>
-        </a>
-        <a href="#" onclick="return false;">
-          <button class="oauth-btn github" style="width:100%;margin-bottom:10px;background:rgba(36,41,46,0.5);border:1px solid rgba(255,255,255,0.2);padding:12px 20px;border-radius:12px;cursor:pointer;color:rgba(255,255,255,0.9);font-size:0.86rem;font-weight:600;font-family:Inter,sans-serif;display:flex;align-items:center;justify-content:center;gap:10px;">
-            <svg width="18" height="18" viewBox="0 0 24 24" fill="white"><path d="M12 2C6.477 2 2 6.477 2 12c0 4.42 2.87 8.17 6.84 9.5.5.08.66-.23.66-.5v-1.69c-2.77.6-3.36-1.34-3.36-1.34-.46-1.16-1.11-1.47-1.11-1.47-.91-.62.07-.6.07-.6 1 .07 1.53 1.03 1.53 1.03.87 1.52 2.34 1.07 2.91.83.09-.65.35-1.09.63-1.34-2.22-.25-4.55-1.11-4.55-4.92 0-1.11.38-2 1.03-2.71-.1-.25-.45-1.29.1-2.64 0 0 .84-.27 2.75 1.02.79-.22 1.65-.33 2.5-.33.85 0 1.71.11 2.5.33 1.91-1.29 2.75-1.02 2.75-1.02.55 1.35.2 2.39.1 2.64.65.71 1.03 1.6 1.03 2.71 0 3.82-2.34 4.66-4.57 4.91.36.31.69.92.69 1.85V21c0 .27.16.59.67.5C19.14 20.16 22 16.42 22 12A10 10 0 0 0 12 2z"/></svg>
+          <button style="display:flex;align-items:center;justify-content:center;gap:10px;padding:12px;border-radius:12px;width:100%;font-size:0.84rem;font-weight:600;cursor:pointer;border:1px solid rgba(255,255,255,0.18);color:rgba(255,255,255,0.88);font-family:Inter,sans-serif;background:rgba(36,41,46,0.5);backdrop-filter:blur(10px);">
+            <svg width="17" height="17" viewBox="0 0 24 24" fill="white"><path d="M12 2C6.477 2 2 6.477 2 12c0 4.42 2.87 8.17 6.84 9.5.5.08.66-.23.66-.5v-1.69c-2.77.6-3.36-1.34-3.36-1.34-.46-1.16-1.11-1.47-1.11-1.47-.91-.62.07-.6.07-.6 1 .07 1.53 1.03 1.53 1.03.87 1.52 2.34 1.07 2.91.83.09-.65.35-1.09.63-1.34-2.22-.25-4.55-1.11-4.55-4.92 0-1.11.38-2 1.03-2.71-.1-.25-.45-1.29.1-2.64 0 0 .84-.27 2.75 1.02.79-.22 1.65-.33 2.5-.33.85 0 1.71.11 2.5.33 1.91-1.29 2.75-1.02 2.75-1.02.55 1.35.2 2.39.1 2.64.65.71 1.03 1.6 1.03 2.71 0 3.82-2.34 4.66-4.57 4.91.36.31.69.92.69 1.85V21c0 .27.16.59.67.5C19.14 20.16 22 16.42 22 12A10 10 0 0 0 12 2z"/></svg>
             Continue with GitHub
           </button>
-        </a>
-        <a href="#" onclick="return false;">
-          <button class="oauth-btn msft" style="width:100%;margin-bottom:6px;background:rgba(0,120,212,0.15);border:1px solid rgba(0,120,212,0.4);padding:12px 20px;border-radius:12px;cursor:pointer;color:rgba(255,255,255,0.9);font-size:0.86rem;font-weight:600;font-family:Inter,sans-serif;display:flex;align-items:center;justify-content:center;gap:10px;">
-            <svg width="18" height="18" viewBox="0 0 21 21"><rect x="1" y="1" width="9" height="9" fill="#f25022"/><rect x="11" y="1" width="9" height="9" fill="#7fba00"/><rect x="1" y="11" width="9" height="9" fill="#00a4ef"/><rect x="11" y="11" width="9" height="9" fill="#ffb900"/></svg>
+          <button style="display:flex;align-items:center;justify-content:center;gap:10px;padding:12px;border-radius:12px;width:100%;font-size:0.84rem;font-weight:600;cursor:pointer;border:1px solid rgba(0,120,212,0.38);color:rgba(255,255,255,0.88);font-family:Inter,sans-serif;background:rgba(0,120,212,0.12);backdrop-filter:blur(10px);">
+            <svg width="17" height="17" viewBox="0 0 21 21"><rect x="1" y="1" width="9" height="9" fill="#f25022"/><rect x="11" y="1" width="9" height="9" fill="#7fba00"/><rect x="1" y="11" width="9" height="9" fill="#00a4ef"/><rect x="11" y="11" width="9" height="9" fill="#ffb900"/></svg>
             Continue with Microsoft
           </button>
-        </a>
-        """, unsafe_allow_html=True)
 
         st.markdown('<div class="divider">or sign in with credentials</div>', unsafe_allow_html=True)
 
