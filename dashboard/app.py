@@ -276,6 +276,16 @@ def api_post(ep, data=None):
     except Exception:
         return None
 
+def api_upload_files(ep, uploaded_files):
+    try:
+        files = [('files', (uf.name, uf.getvalue(), uf.type)) for uf in uploaded_files]
+        r = requests.post(f"{API_URL}{ep}", files=files, timeout=10.0)
+        return r.json() if r.status_code == 200 else None
+    except Exception as e:
+        import streamlit as st
+        st.error(f"Upload failed: {e}")
+        return None
+
 def plot_cfg():
     return dict(
         plot_bgcolor="rgba(0,0,0,0)", paper_bgcolor="rgba(0,0,0,0)",
@@ -511,10 +521,14 @@ with st.sidebar:
     st.markdown(f'<div class="{api_cls}">{api_msg}</div>', unsafe_allow_html=True)
 
     st.markdown('<div class="section-hdr">Mission Control</div>', unsafe_allow_html=True)
+    
+    uploaded_files = st.file_uploader("Select files to scan", accept_multiple_files=True)
 
     st.markdown("<div class='primary-btn'>", unsafe_allow_html=True)
     if st.button("Run Full Workflow", disabled=st.session_state.workflow_running or not api_ok):
-        res = api_post("/workflow/run", {"target_path": ".", "num_nfs": 24})
+        if uploaded_files:
+            api_upload_files("/workflow/upload", uploaded_files)
+        res = api_post("/workflow/run", {"target_path": "workspace/scan_target" if uploaded_files else ".", "num_nfs": 24})
         if res:
             st.session_state.workflow_running = True
             st.rerun()

@@ -16,7 +16,8 @@ from typing import Any, Dict, List, Optional
 
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
-from fastapi import FastAPI, HTTPException, BackgroundTasks, WebSocket, WebSocketDisconnect
+import shutil
+from fastapi import FastAPI, HTTPException, BackgroundTasks, WebSocket, WebSocketDisconnect, UploadFile, File
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 
@@ -179,7 +180,7 @@ class QKDChannelUpdate(BaseModel):
     is_free_space: Optional[bool] = None
 
 class WorkflowRunRequest(BaseModel):
-    target_path: str = "."
+    target_path: str = "workspace/scan_target"
     num_nfs: int = 24
     data_sensitivity: str = "CONFIDENTIAL"
 
@@ -205,6 +206,28 @@ async def status():
         "qkd_mode": sm.current_mode.value,
         "ledger": ledger.stats(),
     }
+
+
+
+# ─── File Uploads for Scanning ───────────────────────────────────────────────
+
+@app.post("/workflow/upload")
+async def upload_files(files: List[UploadFile] = File(...)):
+    target_dir = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "workspace", "scan_target")
+    os.makedirs(target_dir, exist_ok=True)
+    
+    # Clean previous uploads
+    for f in os.listdir(target_dir):
+        os.remove(os.path.join(target_dir, f))
+        
+    saved_files = []
+    for file in files:
+        file_path = os.path.join(target_dir, file.filename)
+        with open(file_path, "wb") as buffer:
+            shutil.copyfileobj(file.file, buffer)
+        saved_files.append(file.filename)
+        
+    return {"status": "success", "saved_files": saved_files, "target_path": target_dir}
 
 
 # ─── Step 1: Discovery & Telecom CBOM ────────────────────────────────────────
@@ -495,9 +518,15 @@ async def run_full_workflow(req: WorkflowRunRequest, background_tasks: Backgroun
         _pipeline["running"] = True
         _pipeline["step"] = 0
         try:
+            # Resolve target path
+            base_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+            target_path = req.target_path if os.path.isabs(req.target_path) else os.path.join(base_dir, req.target_path)
+            if not os.path.exists(target_path):
+                target_path = base_dir # fallback to project root if scan_target doesn't exist
+                
             # Step 1 — CBOM
             scanner = CBOMScanner(data_sensitivity=req.data_sensitivity, years_data_must_stay_secret=10)
-            report = scanner.scan_path(req.target_path)
+            report = scanner.scan_path(target_path)
             _pipeline["cbom"] = json.loads(scanner.to_json(report))
             _pipeline["step"] = 1
             await asyncio.sleep(0.5)
@@ -579,6 +608,29 @@ async def run_full_workflow(req: WorkflowRunRequest, background_tasks: Backgroun
             _pipeline["step"] = 8
             await asyncio.sleep(0.3)
 
+
+            # Step 8.5 — Physical File Remediation
+            # If target_path is scan_target, we generate safe versions
+            safe_dir = os.path.join(base_dir, "workspace", "safe_versions")
+            os.makedirs(safe_dir, exist_ok=True)
+            if "scan_target" in target_path:
+                for root, dirs, files in os.walk(target_path):
+                    for file in files:
+                        filepath = os.path.join(root, file)
+                        try:
+                            with open(filepath, "r", encoding="utf-8") as rf:
+                                f_content = rf.read()
+                            # Basic auto-remediation logic for python/config
+                            f_content = re.sub(r'(?i)RSA', 'ML-KEM-768', f_content)
+                            f_content = re.sub(r'(?i)MD5|SHA-?1', 'SHA-256', f_content)
+                            f_content = re.sub(r'(?i)TLSv1\.2|TLSv1\.1|TLSv1', 'TLSv1.3', f_content)
+                            
+                            safe_filepath = os.path.join(safe_dir, file)
+                            with open(safe_filepath, "w", encoding="utf-8") as wf:
+                                wf.write(f_content)
+                        except Exception:
+                            pass # skip binary files or errors
+                            
             # Step 9 — Report
             _pipeline["report"] = {"generated_at": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()),
                                     "ledger": ledger.export_report()}
